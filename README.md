@@ -1,4 +1,9 @@
 # STACAS: Sub-Type Anchoring Correction for Alignment in Seurat
+
+<p align="center">
+  <img height="80" src="docs/white.sq.png">
+</p>
+
 `STACAS` is a method for anchor identification, meant to be incorporated in Seurat pipelines for batch correction and integration of scRNA-seq datasets.
 
 Find the installation instructions for the package below, and a vignette detailing its functions at [Tutorial (html)](https://carmonalab.github.io/STACAS/tutorial.html) and [Tutorial (repository)](https://gitlab.unil.ch/carmona/STACAS.demo)
@@ -42,3 +47,7 @@ To run the code of the tutorial on your machine, download the demo repository: [
 ### Documentation
 
 See a description of the functions implemented in STACAS at: [STACAS functions](docs/functions.md)
+
+<p align="center">
+  <img height="60" src="docs/white.sq.png">
+</p>
