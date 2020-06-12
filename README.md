@@ -19,7 +19,7 @@ if (!requireNamespace("Seurat", quietly = TRUE)) {
    install.packages("Seurat")
 }
 
-remotes::install_git("https://gitlab.unil.ch/carmona/STACAS.git")
+remotes::install_github("carmonalab/STACAS")
 ```
 
 ### Test the package
@@ -33,4 +33,11 @@ data(STACAS.sampledata)
 STACAS.anchors <- Run.STACAS(STACAS.sampledata)
 ```
 
-You can find a tutorial for `STACAS` in a complete Seurat integration pipeline at [STACAS.demo](https://gitlab.unil.ch/carmona/STACAS.demo)
+### STACAS integration TUTORIAL
+
+Find a tutorial for `STACAS` in a complete Seurat integration pipeline at: [STACAS Tutorial](docs/tutorial.html)
+To run the code of the tutorial on your machine, download the demo repository: [STACAS.demo](https://gitlab.unil.ch/carmona/STACAS.demo)
+
+### Documentation
+
+See a description of the functions implemented in STACAS at: [STACAS functions](docs/functions.md)
