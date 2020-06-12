@@ -35,7 +35,8 @@ STACAS.anchors <- Run.STACAS(STACAS.sampledata)
 
 ### STACAS integration TUTORIAL
 
-Find a tutorial for `STACAS` in a complete Seurat integration pipeline at: [STACAS Tutorial](docs/tutorial.html)
+Find a tutorial for `STACAS` in a complete Seurat integration pipeline at: [STACAS Tutorial](https://carmonalab.github.io/STACAS/tutorial.html)
+
 To run the code of the tutorial on your machine, download the demo repository: [STACAS.demo](https://gitlab.unil.ch/carmona/STACAS.demo)
 
 ### Documentation
