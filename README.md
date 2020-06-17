@@ -6,9 +6,12 @@
 
 `STACAS` is a method for anchor identification, designed to be easily incorporated in Seurat pipelines for batch correction and integration of scRNA-seq datasets ([Andreatta & Carmona, bioRxiv 2020](https://doi.org/10.1101/2020.06.15.152306)).
 
+`STACAS` is ideal to align scRNA-seq datasets that are composed of only partially overlapping cell populations or sub-types, where other methods under-perform.
+
 Find the installation instructions for the package below, and a vignette detailing its functions at [Tutorial (html)](https://carmonalab.github.io/STACAS/tutorial.html) and [Tutorial (repository)](https://gitlab.unil.ch/carmona/STACAS.demo)
 
-A Docker image for STACAS is available on [DockerHub](https://hub.docker.com/repository/docker/mandrea1/stacas_demo)
+If you prefer to avoid installing R packages, you can run `STACAS` in Docker.
+A ready-to-use Docker image with usage instructions is available on [DockerHub](https://hub.docker.com/repository/docker/mandrea1/stacas_demo)
 
 ### Package Installation
 
