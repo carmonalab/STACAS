@@ -53,6 +53,10 @@ To run the code of the tutorial on your machine, download the demo repository: [
 
 See a description of the functions implemented in STACAS at: [STACAS functions](docs/functions.md)
 
+### Citation
+
+STACAS: Sub-Type Anchor Correction for Alignment in Seurat to integrate single-cell RNA-seq data. Massimo Andreatta & Santiago J. Carmona. 2020 [https://doi.org/10.1101/2020.06.15.152306](https://doi.org/10.1101/2020.06.15.152306)
+
 <p align="center">
   <img height="60" src="docs/white.sq.png">
 </p>
