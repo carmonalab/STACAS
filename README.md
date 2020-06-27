@@ -8,6 +8,8 @@
 
 `STACAS` is ideal to align scRNA-seq datasets that are composed of only partially overlapping cell populations or sub-types, where other methods under-perform.
 
+To see `STACAS` in action on larger scale integration tasks towards the construction of reference T cell maps in cancer and infection, please refer to _Projecting single-cell transcriptomics data onto a reference T cell atlas to interpret immune responses_ by Andreatta _et al_ 2020 [https://doi.org/10.1101/2020.06.23.166546](https://doi.org/10.1101/2020.06.23.166546)
+
 Find the installation instructions for the package below, and a vignette detailing its functions at [Tutorial (html)](https://carmonalab.github.io/STACAS/tutorial.html) and [Tutorial (repository)](https://gitlab.unil.ch/carmona/STACAS.demo)
 
 If you prefer to avoid installing R packages, you can run `STACAS` in Docker.
