@@ -6,9 +6,9 @@
 
 `STACAS` is a method for anchor identification, designed to be easily incorporated in Seurat pipelines for batch correction and integration of scRNA-seq datasets ([Andreatta & Carmona, bioRxiv 2020](https://doi.org/10.1101/2020.06.15.152306)).
 
-`STACAS` is ideal to align scRNA-seq datasets that are composed of only partially overlapping cell populations or sub-types, where other methods under-perform.
+`STACAS` is ideal to align scRNA-seq datasets that are composed of only partially overlapping cell populations or sub-types, where other methods tend to under-perform.
 
-To see `STACAS` in action on larger scale integration tasks towards the construction of reference T cell maps in cancer and infection, please refer to _Projecting single-cell transcriptomics data onto a reference T cell atlas to interpret immune responses_ by Andreatta _et al_ 2020 [https://doi.org/10.1101/2020.06.23.166546](https://doi.org/10.1101/2020.06.23.166546)
+To see `STACAS` in action on larger scale integration tasks towards the construction of reference T cell maps in cancer and infection, please refer to this paper: [https://doi.org/10.1101/2020.06.23.166546](https://doi.org/10.1101/2020.06.23.166546)
 
 Find the installation instructions for the package below, and a vignette detailing its functions at [Tutorial (html)](https://carmonalab.github.io/STACAS/tutorial.html) and [Tutorial (repository)](https://gitlab.unil.ch/carmona/STACAS.demo)
 
@@ -57,7 +57,7 @@ See a description of the functions implemented in STACAS at: [STACAS functions](
 
 ### Citation
 
-STACAS: Sub-Type Anchor Correction for Alignment in Seurat to integrate single-cell RNA-seq data. Massimo Andreatta & Santiago J. Carmona. 2020 [https://doi.org/10.1101/2020.06.15.152306](https://doi.org/10.1101/2020.06.15.152306)
+_STACAS: Sub-Type Anchor Correction for Alignment in Seurat to integrate single-cell RNA-seq data._ Massimo Andreatta & Santiago J. Carmona. 2020 [https://doi.org/10.1101/2020.06.15.152306](https://doi.org/10.1101/2020.06.15.152306)
 
 <p align="center">
   <img height="60" src="docs/white.sq.png">
