@@ -4,7 +4,7 @@
   <img height="80" src="docs/white.sq.png">
 </p>
 
-`STACAS` is a method for anchor identification, designed to be easily incorporated in Seurat pipelines for batch correction and integration of scRNA-seq datasets ([Andreatta & Carmona, bioRxiv 2020](https://doi.org/10.1101/2020.06.15.152306)).
+`STACAS` is a method for anchor identification, designed to be easily incorporated in Seurat pipelines for batch correction and integration of scRNA-seq datasets ([Andreatta & Carmona, Bioinformatics 2020](http://dx.doi.org/10.1093/bioinformatics/btaa755)).
 
 `STACAS` is ideal to align scRNA-seq datasets that are composed of only partially overlapping cell populations or sub-types, where other methods tend to under-perform.
 
@@ -57,7 +57,7 @@ See a description of the functions implemented in STACAS at: [STACAS functions](
 
 ### Citation
 
-_STACAS: Sub-Type Anchor Correction for Alignment in Seurat to integrate single-cell RNA-seq data._ Massimo Andreatta & Santiago J. Carmona. 2020 [https://doi.org/10.1101/2020.06.15.152306](https://doi.org/10.1101/2020.06.15.152306)
+Massimo Andreatta, Santiago J Carmona, STACAS: Sub-Type Anchor Correction for Alignment in Seurat to integrate single-cell RNA-seq data, Bioinformatics, 2020, btaa755, https://doi.org/10.1093/bioinformatics/btaa755
 
 <p align="center">
   <img height="60" src="docs/white.sq.png">
