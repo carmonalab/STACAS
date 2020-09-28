@@ -219,15 +219,18 @@ SampleTree.STACAS <- function (
   objects.ncell <- sapply(X = object.list, FUN = ncol)
   offsets <- slot(object = anchorset, name = "offsets")
 
-  similarity.matrix <- Seurat:::CountAnchors(
+  similarity.matrix <- CountAnchors.Seurat(
     anchor.df = anchors,
     offsets = offsets,
     obj.lengths = objects.ncell
   )
 
   similarity.matrix <- similarity.matrix[reference.objects, reference.objects]
-  sample.tree <- Seurat:::BuildSampleTree(similarity.matrix = similarity.matrix)
-  sample.tree <- Seurat:::AdjustSampleTree(x = sample.tree, reference.objects = reference.objects)
+  similarity.matrix <- similarity.matrix+10^-6 #avoid 1/0
+
+  distance.matrix <- as.dist(m = 1 / similarity.matrix)
+  sample.tree <- hclust(d = distance.matrix)$merge
+  sample.tree <- AdjustSampleTree.Seurat(x = sample.tree, reference.objects = reference.objects)
 
   #precalculate anchors between sets
   nanch <- list()
@@ -249,6 +252,45 @@ SampleTree.STACAS <- function (
     nanch[[as.character(r)]] <- length1+length2
   }
   return(sample.tree)
+}
+
+# Count anchors between data sets
+# IMPORTED from Seurat 3.2.1
+CountAnchors.Seurat <- function(
+  anchor.df,
+  offsets,
+  obj.lengths
+) {
+  similarity.matrix <- matrix(data = 0, ncol = length(x = offsets), nrow = length(x = offsets))
+  similarity.matrix[upper.tri(x = similarity.matrix, diag = TRUE)] <- NA
+  total.cells <- sum(obj.lengths)
+  offsets <- c(offsets, total.cells)
+  for (i in 1:nrow(x = similarity.matrix)){
+    for (j in 1:ncol(x = similarity.matrix)){
+      if (!is.na(x = similarity.matrix[i, j])){
+        relevant.rows <- anchor.df[(anchor.df$dataset1 %in% c(i, j)) & (anchor.df$dataset2 %in% c(i, j)), ]
+        score <- nrow(x = relevant.rows)
+        ncell <- min(obj.lengths[[i]], obj.lengths[[j]])
+        similarity.matrix[i, j] <- score / ncell
+      }
+    }
+  }
+  return(similarity.matrix)
+}
+
+# Adjust sample tree to only include given reference objects
+# IMPORTED from Seurat 3.2.1
+AdjustSampleTree.Seurat <- function(x, reference.objects) {
+  for (i in 1:nrow(x = x)) {
+    obj.id <- -(x[i, ])
+    if (obj.id[[1]] > 0) {
+      x[i, 1] <- -(reference.objects[[obj.id[[1]]]])
+    }
+    if (obj.id[[2]] > 0) {
+      x[i, 2] <- -(reference.objects[[obj.id[[2]]]])
+    }
+  }
+  return(x)
 }
 
 ###Modified function to return anchor distances together with anchor pairs - distances can be used to filter anchors at a later stage
@@ -522,6 +564,7 @@ FindIntegrationAnchors.wdist <- function(
       )
 
       internal.neighbors <- internal.neighbors[c(i, j)]
+
       anchors <- FindAnchors.wdist(
         object.pair = object.pair,
         assay = c("ToIntegrate", "ToIntegrate"),
@@ -574,7 +617,7 @@ FindIntegrationAnchors.wdist <- function(
   }
 }
 
-##Modified Sweep function
+##Modified Sweep function (from Seurat 3.1)
 Sweep <- function(x, MARGIN, STATS, FUN = '-', check.margin = TRUE, ...) {
   if (any(grepl(pattern = 'X', x = names(x = formals(fun = sweep))))) {
     return(sweep(
@@ -597,7 +640,305 @@ Sweep <- function(x, MARGIN, STATS, FUN = '-', check.margin = TRUE, ...) {
   }
 }
 
-###Find Anchors functions, modified to return the distance in PC space between pairs of datasets
+# Find nearest neighbors
+# IMPORTED from Seurat 3.2.1
+FindNN.Seurat <- function(
+  object,
+  cells1 = NULL,
+  cells2 = NULL,
+  internal.neighbors,
+  grouping.var = NULL,
+  dims = 1:10,
+  reduction = "cca.l2",
+  reduction.2 = character(),
+  nn.dims = dims,
+  nn.reduction = reduction,
+  k = 300,
+  nn.method = "rann",
+  eps = 0,
+  integration.name = 'integrated',
+  verbose = TRUE
+) {
+  if (xor(x = is.null(x = cells1), y = is.null(x = cells2))) {
+    stop("cells1 and cells2 must both be specified")
+  }
+  if (!is.null(x = cells1) && !is.null(x = cells2) && !is.null(x = grouping.var)) {
+    stop("Specify EITHER grouping.var or cells1/2.")
+  }
+  if (is.null(x = cells1) && is.null(x = cells2) && is.null(x = grouping.var)) {
+    stop("Please set either cells1/2 or grouping.var")
+  }
+  if (!is.null(x = grouping.var)) {
+    if (nrow(x = unique(x = object[[grouping.var]])) != 2) {
+      stop("Number of groups in grouping.var not equal to 2.")
+    }
+    groups <- names(x = sort(x = table(object[[grouping.var]]), decreasing = TRUE))
+    cells1 <- colnames(x = object)[object[[grouping.var]] == groups[[1]]]
+    cells2 <- colnames(x = object)[object[[grouping.var]] == groups[[2]]]
+  }
+  if (verbose) {
+    message("Finding neighborhoods")
+  }
+  if (!is.null(x = internal.neighbors[[1]])) {
+    nnaa <- internal.neighbors[[1]]
+    nnbb <- internal.neighbors[[2]]
+  } else {
+    dim.data.self <- Embeddings(object = object[[nn.reduction]])[ ,nn.dims]
+    dims.cells1.self <- dim.data.self[cells1, ]
+    dims.cells2.self <- dim.data.self[cells2, ]
+    nnaa <- Seurat:::NNHelper(
+      data = dims.cells1.self,
+      k = k + 1,
+      method = nn.method,
+      eps = eps
+    )
+    nnbb <- Seurat:::NNHelper(
+      data = dims.cells2.self,
+      k = k + 1,
+      method = nn.method,
+      eps = eps
+    )
+  }
+  if (length(x = reduction.2) > 0) {
+    nnab <- Seurat:::NNHelper(
+      data = Embeddings(object = object[[reduction.2]])[cells2, ],
+      query = Embeddings(object = object[[reduction.2]])[cells1, ],
+      k = k,
+      method = nn.method,
+      eps = eps
+    )
+    nnba <- Seurat:::NNHelper(
+      data = Embeddings(object = object[[reduction]])[cells1, ],
+      query = Embeddings(object = object[[reduction]])[cells2, ],
+      k = k,
+      method = nn.method,
+      eps = eps
+    )
+  } else {
+    dim.data.opposite <- Embeddings(object = object[[reduction]])[ ,dims]
+    dims.cells1.opposite <- dim.data.opposite[cells1, ]
+    dims.cells2.opposite <- dim.data.opposite[cells2, ]
+    nnab <- Seurat:::NNHelper(
+      data = dims.cells2.opposite,
+      query = dims.cells1.opposite,
+      k = k,
+      method = nn.method,
+      eps = eps
+    )
+    nnba <- Seurat:::NNHelper(
+      data = dims.cells1.opposite,
+      query = dims.cells2.opposite,
+      k = k,
+      method = nn.method,
+      eps = eps
+    )
+  }
+
+  object <- SetIntegrationData(
+    object = object,
+    integration.name = integration.name,
+    slot = 'neighbors',
+    new.data = list('nnaa' = nnaa, 'nnab' = nnab, 'nnba' = nnba, 'nnbb' = nnbb, 'cells1' = cells1, 'cells2' = cells2)
+  )
+  return(object)
+}
+
+
+# Find Anchor pairs
+# IMPORTED from Seurat 3.2.1
+FindAnchorPairs.Seurat <- function(
+  object,
+  integration.name = 'integrated',
+  k.anchor = 5,
+  verbose = TRUE
+) {
+  neighbors <- GetIntegrationData(object = object, integration.name = integration.name, slot = 'neighbors')
+  max.nn <- c(ncol(x = neighbors$nnab), ncol(x = neighbors$nnba))
+  if (any(k.anchor > max.nn)) {
+    message(paste0('warning: requested k.anchor = ', k.anchor, ', only ', min(max.nn), ' in dataset'))
+    k.anchor <- min(max.nn)
+  }
+  if (verbose) {
+    message("Finding anchors")
+  }
+  # convert cell name to neighbor index
+  nn.cells1 <- neighbors$cells1
+  nn.cells2 <- neighbors$cells2
+  cell1.index <-  suppressWarnings(which(colnames(x = object) == nn.cells1, arr.ind = TRUE))
+  ncell <- 1:nrow(x = neighbors$nnab)
+  ncell <- ncell[ncell %in% cell1.index]
+  anchors <- list()
+  # pre allocate vector
+  anchors$cell1 <- rep(x = 0, length(x = ncell) * 5)
+  anchors$cell2 <- anchors$cell1
+  anchors$score <- anchors$cell1 + 1
+  idx <- 0
+  indices.ab <- Indices(object = neighbors$nnab)
+  indices.ba <- Indices(object = neighbors$nnba)
+  for (cell in ncell) {
+    neighbors.ab <- indices.ab[cell, 1:k.anchor]
+    mutual.neighbors <- which(
+      x = indices.ba[neighbors.ab, 1:k.anchor, drop = FALSE] == cell,
+      arr.ind = TRUE
+    )[, 1]
+    for (i in neighbors.ab[mutual.neighbors]){
+      idx <- idx + 1
+      anchors$cell1[idx] <- cell
+      anchors$cell2[idx] <- i
+      anchors$score[idx] <- 1
+    }
+  }
+  anchors$cell1 <- anchors$cell1[1:idx]
+  anchors$cell2 <- anchors$cell2[1:idx]
+  anchors$score <- anchors$score[1:idx]
+  anchors <- t(x = do.call(what = rbind, args = anchors))
+  anchors <- as.matrix(x = anchors)
+  object <- SetIntegrationData(
+    object = object,
+    integration.name = integration.name,
+    slot = 'anchors',
+    new.data = anchors
+  )
+  if (verbose) {
+    message(paste0("\tFound ", nrow(x = anchors), " anchors"))
+  }
+  return(object)
+}
+
+# Top dim features
+# IMPORTED from Seurat 3.2.1
+TopDimFeatures.Seurat <- function(
+  object,
+  reduction,
+  dims = 1:10,
+  features.per.dim = 100,
+  max.features = 200,
+  projected = FALSE
+) {
+  dim.reduction <- object[[reduction]]
+  max.features <- max(length(x = dims) * 2, max.features)
+  num.features <- sapply(X = 1:features.per.dim, FUN = function(y) {
+    length(x = unique(x = as.vector(x = sapply(X = dims, FUN = function(x) {
+      unlist(x = TopFeatures(object = dim.reduction, dim = x, nfeatures = y, balanced = TRUE, projected = projected))
+    }))))
+  })
+  max.per.pc <- which.max(x = num.features[num.features < max.features])
+  features <- unique(x = as.vector(x = sapply(X = dims, FUN = function(x) {
+    unlist(x = TopFeatures(object = dim.reduction, dim = x, nfeatures = max.per.pc, balanced = TRUE, projected = projected))
+  })))
+  features <- unique(x = features)
+  return(features)
+}
+
+# Filter anchors
+# IMPORTED from Seurat 3.2.1
+FilterAnchors.Seurat <- function(
+  object,
+  assay = NULL,
+  slot = "data",
+  integration.name = 'integrated',
+  features = NULL,
+  k.filter = 200,
+  nn.method = "rann",
+  eps = 0,
+  verbose = TRUE
+) {
+  if (verbose) {
+    message("Filtering anchors")
+  }
+  assay <- assay %||% DefaultAssay(object = object)
+  features <- features %||% VariableFeatures(object = object)
+  if (length(x = features) == 0) {
+    stop("No features provided and no VariableFeatures computed.")
+  }
+  features <- unique(x = features)
+  neighbors <- GetIntegrationData(object = object, integration.name = integration.name, slot = 'neighbors')
+  nn.cells1 <- neighbors$cells1
+  nn.cells2 <- neighbors$cells2
+  cn.data1 <- L2Norm(
+    mat = as.matrix(x = t(x = GetAssayData(
+      object = object[[assay[1]]],
+      slot = slot)[features, nn.cells1])),
+    MARGIN = 1)
+  cn.data2 <- L2Norm(
+    mat = as.matrix(x = t(x = GetAssayData(
+      object = object[[assay[2]]],
+      slot = slot)[features, nn.cells2])),
+    MARGIN = 1)
+  nn <- NNHelper(
+    data = cn.data2[nn.cells2, ],
+    query = cn.data1[nn.cells1, ],
+    k = k.filter,
+    method = nn.method,
+    eps = eps
+  )
+
+  anchors <- GetIntegrationData(object = object, integration.name = integration.name, slot = "anchors")
+  position <- sapply(X = 1:nrow(x = anchors), FUN = function(x) {
+    which(x = anchors[x, "cell2"] == Indices(object = nn)[anchors[x, "cell1"], ])[1]
+  })
+  anchors <- anchors[!is.na(x = position), ]
+  if (verbose) {
+    message("\tRetained ", nrow(x = anchors), " anchors")
+  }
+  object <- SetIntegrationData(
+    object = object,
+    integration.name = integration.name,
+    slot = "anchors",
+    new.data = anchors
+  )
+  return(object)
+}
+
+# Score Anchors
+# IMPORTED from Seurat 3.2.1
+ScoreAnchors.Seurat <- function(
+  object,
+  assay = NULL,
+  integration.name = 'integrated',
+  verbose = TRUE,
+  k.score = 30,
+  do.cpp = TRUE
+) {
+  assay <- assay %||% DefaultAssay(object = object)
+  anchor.df <- as.data.frame(x = GetIntegrationData(object = object, integration.name = integration.name, slot = 'anchors'))
+  neighbors <- GetIntegrationData(object = object, integration.name = integration.name, slot = "neighbors")
+  offset <- length(x = neighbors$cells1)
+  indices.aa <- Indices(object = neighbors$nnaa)
+  indices.bb <- Indices(object = neighbors$nnbb)
+  indices.ab <- Indices(object = neighbors$nnab)
+  indices.ba <- Indices(object = neighbors$nnba)
+  nbrsetA <- function(x) c(indices.aa[x, 1:k.score], indices.ab[x, 1:k.score] + offset)
+  nbrsetB <- function(x) c(indices.ba[x, 1:k.score], indices.bb[x, 1:k.score] + offset)
+  # score = number of shared neighbors
+  anchor.new <- data.frame(
+    'cell1' = anchor.df[, 1],
+    'cell2' = anchor.df[, 2],
+    'score' = mapply(
+      FUN = function(x, y) {
+        length(x = intersect(x = nbrsetA(x = x), nbrsetB(x = y)))},
+      anchor.df[, 1],
+      anchor.df[, 2]
+    )
+  )
+  # normalize the score
+  max.score <- quantile(anchor.new$score, 0.9)
+  min.score <- quantile(anchor.new$score, 0.01)
+  anchor.new$score <- anchor.new$score - min.score
+  anchor.new$score <- anchor.new$score / (max.score - min.score)
+  anchor.new$score[anchor.new$score > 1] <-  1
+  anchor.new$score[anchor.new$score < 0] <- 0
+  anchor.new <- as.matrix(x = anchor.new)
+  object <- SetIntegrationData(
+    object = object,
+    integration.name = integration.name,
+    slot = 'anchors',
+    new.data = anchor.new
+  )
+  return(object)
+}
+
+###Find Anchors functions, modified from Seurat 3.1 to return the distance in PC space between pairs of datasets
 FindAnchors.wdist <- function(
   object.pair,
   assay,
@@ -624,7 +965,7 @@ FindAnchors.wdist <- function(
   if (!is.na(x = k.score)) {
     k.neighbor <- max(k.anchor, k.score)
   }
-  object.pair <- Seurat:::FindNN(
+  object.pair <- FindNN.Seurat(
     object = object.pair,
     cells1 = cells1,
     cells2 = cells2,
@@ -639,7 +980,7 @@ FindAnchors.wdist <- function(
     verbose = verbose
   )
 
-  object.pair <- Seurat:::FindAnchorPairs(
+  object.pair <- FindAnchorPairs.Seurat(
     object = object.pair,
     integration.name = "integrated",
     k.anchor = k.anchor,
@@ -647,7 +988,7 @@ FindAnchors.wdist <- function(
   )
 
   if (!is.na(x = k.filter)) {
-    top.features <- Seurat:::TopDimFeatures(
+    top.features <- TopDimFeatures.Seurat(
       object = object.pair,
       reduction = reduction,
       dims = dims,
@@ -655,7 +996,7 @@ FindAnchors.wdist <- function(
       max.features = max.features,
       projected = projected
     )
-    object.pair <- Seurat:::FilterAnchors(
+    object.pair <- FilterAnchors.Seurat(
       object = object.pair,
       assay = assay,
       slot = slot,
@@ -668,7 +1009,7 @@ FindAnchors.wdist <- function(
     )
   }
   if (!is.na(x = k.score)) {
-    object.pair = Seurat:::ScoreAnchors(
+    object.pair = ScoreAnchors.Seurat(
       object = object.pair,
       assay = DefaultAssay(object = object.pair),
       integration.name = "integrated",
@@ -677,21 +1018,19 @@ FindAnchors.wdist <- function(
     )
   }
 
-  ###HERE
+  ###Return distances
   anc.tab <- object.pair@tools$integrated@anchors
   d1.2 <- numeric(length = dim(anc.tab)[1])
   d2.1 <- numeric(length = dim(anc.tab)[1])
   for (r in 1:dim(anc.tab)[1]) {
     c1 <- anc.tab[r,"cell1"]
     c2 <- anc.tab[r,"cell2"]
-    d1.2[r] <- object.pair@tools$integrated@neighbors$nnab$nn.dists[c1, which(object.pair@tools$integrated@neighbors$nnab$nn.idx[c1,] == c2 )]
-    d2.1[r] <- object.pair@tools$integrated@neighbors$nnba$nn.dists[c2, which(object.pair@tools$integrated@neighbors$nnba$nn.idx[c2,] == c1 )]
+    d1.2[r] <- object.pair@tools$integrated@neighbors$nnab@nn.dist[c1, which(object.pair@tools$integrated@neighbors$nnab@nn.idx[c1,] == c2 )]
+    d2.1[r] <- object.pair@tools$integrated@neighbors$nnba@nn.dist[c2, which(object.pair@tools$integrated@neighbors$nnba@nn.idx[c2,] == c1 )]
   }
 
   object.pair@tools$integrated@anchors <- cbind(object.pair@tools$integrated@anchors, dist1.2=d1.2)
   object.pair@tools$integrated@anchors <- cbind(object.pair@tools$integrated@anchors, dist2.1=d2.1)
-
-  ##TO HERE
 
   anchors <- GetIntegrationData(
     object = object.pair,
