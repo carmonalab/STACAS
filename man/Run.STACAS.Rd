@@ -11,6 +11,7 @@ Run.STACAS(object.list = NULL,
     assay = NULL, reference = NULL,
     anchor.features = 500,
     dims = 1:10,
+    normalization.method = c("LogNormalize", "SCT"),
     dist.thr = NULL,
     dist.pct = 0.8,
     k.anchor = 5,
@@ -38,6 +39,9 @@ Run.STACAS(object.list = NULL,
   }
   \item{dims}{
     The number of dimensions used for PCA reduction
+  }
+   \item{normalization.method}{
+    Which normalization method was used to prepare the data - either LogNormalize (default) or SCT
   }
   \item{dist.thr}{
     Distance threshold for anchor filtering. Distances are calculated by reciprocal PCA projection between pairs of datasets. If not specified, \code{dist.thr} defaults to the \code{dist.pct} percentile of the distance between the two closest datasets.

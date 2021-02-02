@@ -1,7 +1,7 @@
 Package: STACAS
 Type: Package
 Title: STACAS: Sub-Type Anchoring Correction for Alignment in Seurat
-Version: 1.0.1
+Version: 1.1.0
 Authors@R: c(
   person(given = 'Massimo', family = 'Andreatta', email = 'massimo.andreatta@unil.ch', role = c('aut','cre'), comment = c(ORCID = '0000-0002-8036-2647')),
   person(given = 'Santiago', family = 'Carmona', email = 'santiago.carmona@unil.ch', role = c('aut'), comment = c(ORCID = '0000-0002-2495-0671'))
@@ -13,7 +13,7 @@ Description: This package implements methods for determining anchors for Seurat 
     would tend to over-correct biological differences.
 Depends: R (>= 3.6.1)
 Imports:
-    Seurat(>= 3.2.1),
+    Seurat(>= 4.0.0),
     future,
     future.apply,
     pbapply,

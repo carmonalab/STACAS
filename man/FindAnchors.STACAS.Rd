@@ -14,6 +14,7 @@ FindAnchors.STACAS(object.list = NULL,
     reference = NULL,
     anchor.features = 500,
     dims = 1:10,
+    normalization.method = c("LogNormalize", "SCT"),
     k.anchor = 5,
     k.score = 30,
     verbose = TRUE)
@@ -38,6 +39,9 @@ FindAnchors.STACAS(object.list = NULL,
   }
   \item{dims}{
     The number of dimensions used for PCA reduction
+  }
+  \item{normalization.method}{
+    Which normalization method was used to prepare the data - either LogNormalize (default) or SCT
   }
  \item{k.anchor}{
     The number of neighbors to use for identifying anchors

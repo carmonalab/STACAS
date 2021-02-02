@@ -4,6 +4,7 @@ Run.STACAS <- function (
   reference = NULL,
   anchor.features = 500,
   dims = 1:10,
+  normalization.method = c("LogNormalize", "SCT"),
   dist.thr = NULL,
   dist.pct = 0.8,
   k.anchor = 5,
@@ -11,27 +12,30 @@ Run.STACAS <- function (
   plot.file = "anchor.dist.mean.pairwise.png",
   verbose = TRUE
 ) {
+  normalization.method <- match.arg(arg = normalization.method)
+  
   ref.anchors <- FindAnchors.STACAS(object.list, dims=dims, k.anchor=k.anchor, k.score=k.score, assay=assay,
+                                    normalization.method = normalization.method,
                                     reference=reference, anchor.features=anchor.features, verbose=verbose)
-
+  
   if (is.null(names(object.list))) {
     names <- 1:length(object.list)
   } else {
     names <- names(object.list)
   }
-
+  
   plots <- PlotAnchors.STACAS(ref.anchors, obj.names=names, dist.thr=dist.thr,  dist.pct = dist.pct)
-
+  
   g.cols <- 3
   g.rows <- as.integer((length(plots)+2)/g.cols)
   g <- do.call("arrangeGrob", c(plots, ncol=g.cols, nrow=g.rows))
   ggsave(plot.file, plot=g, width = 6*g.cols, height = 6*g.rows)
-
+  
   plot.new()
   grid.draw(g)
-
+  
   ref.anchors.filtered <- FilterAnchors.STACAS(ref.anchors, dist.thr=dist.thr, dist.pct = dist.pct)
-
+  
   return(ref.anchors.filtered)
 }
 
@@ -41,14 +45,16 @@ FindAnchors.STACAS <- function (
   reference = NULL,
   anchor.features = 500,
   dims = 1:10,
+  normalization.method = c("LogNormalize", "SCT"),
   k.anchor = 5,
   k.score = 30,
   verbose = TRUE
 ) {
-
+  
   scale = FALSE
   reduction = "rpca"
-
+  normalization.method <- match.arg(arg = normalization.method)
+  
   #default assay, or user-defined assay
   if (!is.null(assay)) {
     if (length(assay) != length(object.list)) {
@@ -64,7 +70,7 @@ FindAnchors.STACAS <- function (
   } else {
     assay <- sapply(X = object.list, FUN = DefaultAssay)
   }
-
+  
   #anchor features
   if (is.numeric(x = anchor.features)) {
     n.this <- anchor.features
@@ -79,7 +85,7 @@ FindAnchors.STACAS <- function (
     #Remove cell cycling genes
     anchor.features <- head(setdiff(anchor.features, cycling.genes.STACAS), n.this)
   }
-
+  
   #prepare PCA without data-rescaling
   message("Preparing PCA embeddings for objects...")
   for (i in 1:length(object.list)) {
@@ -89,13 +95,15 @@ FindAnchors.STACAS <- function (
     object.list[[i]] <- RunPCA(object.list[[i]], features = anchor.features, ndims.print = NA, nfeatures.print = NA, verbose=FALSE)
   }
   cat("\n")
-
+  
   #perform rPCA to find anchors
   if (is.null(reference)) {
     ref.anchors <- FindIntegrationAnchors.wdist(object.list, dims = dims, k.anchor = k.anchor, anchor.features=anchor.features,
+                                                normalization.method = normalization.method,
                                                 scale=scale, reduction=reduction, assay=assay, k.score=k.score, verbose=verbose)
   } else {
     ref.anchors <- FindIntegrationAnchors.wdist(object.list, reference=reference, dims = dims, k.anchor = k.anchor, anchor.features=anchor.features,
+                                                normalization.method = normalization.method,
                                                 scale=scale, reduction=reduction, assay=assay, k.score=k.score, verbose=verbose)
   }
   for (r in 1:dim(ref.anchors@anchors)[1]) {
@@ -103,7 +111,7 @@ FindAnchors.STACAS <- function (
     ref.anchors@anchors[r,"dist.max"] <- max(c(ref.anchors@anchors[r,"dist1.2"],ref.anchors@anchors[r,"dist2.1"]))
     ref.anchors@anchors[r,"dist.min"] <- min(c(ref.anchors@anchors[r,"dist1.2"],ref.anchors@anchors[r,"dist2.1"]))
   }
-
+  
   return(ref.anchors)
 }
 
@@ -112,19 +120,24 @@ FilterAnchors.STACAS <- function(
   dist.thr = NULL,
   dist.pct = 0.8
 ) {
-
+  
+  min.anchors.warn = 50
+  
   if(dist.pct<0 | dist.pct>1) {
     stop("Variable dist.pct must be a real number between 0 and 1")
   }
-
+  
+  lev1 <- levels(as.factor(ref.anchors@anchors$dataset1))
+  lev2 <- levels(as.factor(ref.anchors@anchors$dataset2))
+  
   #determine empirically the cutoff threshold, if not provided
   if(is.null(dist.thr)) {
     i=1
     min.pcntile <- vector()
-    for (l1 in levels(as.factor(ref.anchors@anchors$dataset1))) {
+    for (l1 in lev1) {
       j=1
       pcntile <- vector()
-      for (l2 in levels(as.factor(ref.anchors@anchors$dataset2))) {
+      for (l2 in lev2) {
         v <- subset(ref.anchors@anchors, subset=(dataset1==l1 & dataset2==l2))$dist.mean
         if(length(v)>0) {
           pcntile[j] <- sort(v)[dist.pct*length(v)]
@@ -138,6 +151,27 @@ FilterAnchors.STACAS <- function(
   }
   message(sprintf("Filter anchors using distance threshold t=%.3f",dist.thr))
   ref.anchors@anchors <- subset(ref.anchors@anchors, subset=dist.mean<=dist.thr)
+  
+  a1 <- factor(ref.anchors@anchors[,"dataset1"], levels=lev1)
+  a2 <- factor(ref.anchors@anchors[,"dataset2"], levels=lev2)
+  
+  anchor.tab <- table(a1, a2)
+  
+  max.anchors <- apply(anchor.tab, 1, max)
+  
+  for (i in seq_along(max.anchors)) {
+    if (max.anchors[i] == 0) {
+      text <- sprintf("Warning! No anchors left after filtering for dataset %i - integration will fail\n", i)
+      text <- paste0(text, "You may want to specify a higher dist.thr parameter")
+      warning(text)
+    }
+    else if (max.anchors[i] < min.anchors.warn) {
+      text <- sprintf("Warning! Fewer than %i anchors left after filtering for dataset %i - integration may fail\n", min.anchors.warn, i)
+      text <- paste0(text, "You may want to specify a higher dist.thr parameter")
+      warning(text)
+    }
+  }  
+  
   return(ref.anchors)
 }
 
@@ -148,20 +182,20 @@ PlotAnchors.STACAS <- function(
   dist.pct = 0.8
 ) {
   anchortab <- ref.anchors@anchors
-
+  
   levs <- levels(as.factor(anchortab$dataset1))
   if(is.null(obj.names)) {
     obj.names <- levs
   }
-
+  
   if(length(obj.names) != length(levs)) {
     stop("If you provide dataset names, they must be as many as the levels in the anchor set")
   }
-
+  
   if(dist.pct<0 | dist.pct>1) {
     stop("Variable dist.pct must be a real number between 0 and 1")
   }
-
+  
   #determine empirically the cutoff threshold, if not provided
   if(is.null(dist.thr)) {
     i=1
@@ -183,21 +217,21 @@ PlotAnchors.STACAS <- function(
   }
   ###Make distribution plots
   anchortab.toprint <- anchortab[]
-
+  
   a.tmp <- anchortab.toprint
   for (r in 1:dim(anchortab.toprint)[1]) {
     anchortab.toprint[r,"dataset1"] <- obj.names[a.tmp[r,"dataset1"]]
     anchortab.toprint[r,"dataset2"] <- obj.names[a.tmp[r,"dataset2"]]
   }
   rm(a.tmp)
-
+  
   #my.colors=palette(rainbow(length(levs)))
   my.colors=rainbow(length(levs), s=0.7)
   names(my.colors) <- obj.names
   pll=list()
   for (ds1 in 1:length(levs)) {
     data = subset(anchortab.toprint, subset=dataset1==obj.names[ds1])
-
+    
     pll[[ds1]] <- ggplot(data=data, aes(x=dist.mean, y=dataset2, fill=dataset2)) +
       geom_density_ridges(alpha=0.4, scale=0.9) +
       scale_fill_manual(values=my.colors) +
@@ -205,7 +239,7 @@ PlotAnchors.STACAS <- function(
       theme(legend.position = "none") +
       geom_vline(xintercept = dist.thr, linetype="dashed", size=0.75) +
       ggtitle(sprintf("%s - thr=%.3f", obj.names[ds1], dist.thr))
-
+    
   }
   return(pll)
 }
@@ -218,37 +252,37 @@ SampleTree.STACAS <- function (
   anchors <- slot(object = anchorset, name = "anchors")
   objects.ncell <- sapply(X = object.list, FUN = ncol)
   offsets <- slot(object = anchorset, name = "offsets")
-
+  
   similarity.matrix <- CountAnchors.Seurat(
     anchor.df = anchors,
     offsets = offsets,
     obj.lengths = objects.ncell
   )
-
+  
   similarity.matrix <- similarity.matrix[reference.objects, reference.objects]
   similarity.matrix <- similarity.matrix+10^-6 #avoid 1/0
-
+  
   distance.matrix <- as.dist(m = 1 / similarity.matrix)
   sample.tree <- hclust(d = distance.matrix)$merge
   sample.tree <- AdjustSampleTree.Seurat(x = sample.tree, reference.objects = reference.objects)
-
+  
   #precalculate anchors between sets
   nanch <- list()
   names(x = object.list) <- as.character(-(1:length(x = object.list)))
   for (i in 1:length(object.list)) {
     nanch[[as.character(-i)]] <- sum(anchorset@anchors$dataset1==i)
   }
-
+  
   for (r in 1:nrow(sample.tree)) {
     pair <- sample.tree[r, ]
     length1 <- nanch[[as.character(pair[1])]]
     length2 <- nanch[[as.character(pair[2])]]
-
+    
     if (length2 > length1) {
       pair <- rev(pair)
       sample.tree[r, ] <- pair
     }
-
+    
     nanch[[as.character(r)]] <- length1+length2
   }
   return(sample.tree)
@@ -346,7 +380,7 @@ FindIntegrationAnchors.wdist <- function(
     assay <- sapply(X = object.list, FUN = DefaultAssay)
   }
   object.list <- Seurat:::CheckDuplicateCellNames(object.list = object.list)
-
+  
   slot <- "data"
   if (normalization.method == "SCT") {
     slot <- "scale.data"
@@ -425,7 +459,7 @@ FindIntegrationAnchors.wdist <- function(
       }
     )
   }
-
+  
   # determine pairwise combinations
   combinations <- expand.grid(1:length(x = object.list), 1:length(x = object.list))
   combinations <- combinations[combinations$Var1 < combinations$Var2, , drop = FALSE]
@@ -514,10 +548,10 @@ FindIntegrationAnchors.wdist <- function(
             y = rownames(x = Loadings(object = object.2[["pca"]]))
           )
           object.pair <- merge(x = object.1, y = object.2, merge.data = TRUE)
-
+          
           projected.embeddings.1<- t(x = GetAssayData(object = object.1, slot = "scale.data")[common.features, ]) %*%
             Loadings(object = object.2[["pca"]])[common.features, ]
-
+          
           object.pair[['projectedpca.1']] <- CreateDimReducObject(
             embeddings = rbind(projected.embeddings.1, Embeddings(object = object.2[["pca"]])),
             assay = DefaultAssay(object = object.1),
@@ -537,7 +571,7 @@ FindIntegrationAnchors.wdist <- function(
             assay = DefaultAssay(object = object.1),
             key = "pca_"
           )
-
+          
           reduction <- "projectedpca.1"
           reduction.2 <- "projectedpca.2"
           if (l2.norm){
@@ -562,9 +596,9 @@ FindIntegrationAnchors.wdist <- function(
         },
         stop("Invalid reduction parameter. Please choose either cca or rpca")
       )
-
+      
       internal.neighbors <- internal.neighbors[c(i, j)]
-
+      
       anchors <- FindAnchors.wdist(
         object.pair = object.pair,
         assay = c("ToIntegrate", "ToIntegrate"),
@@ -586,18 +620,18 @@ FindIntegrationAnchors.wdist <- function(
       )
       anchors[, 1] <- anchors[, 1] + offsets[i]
       anchors[, 2] <- anchors[, 2] + offsets[j]
-
+      
       return(anchors)
     }
   )
-
+  
   all.anchors <- do.call(what = 'rbind', args = all.anchors)
-
+  
   all.anchors <- rbind(all.anchors, all.anchors[, c(2, 1, 3, 5, 4)])  ##keep distance information
-
+  
   all.anchors <- AddDatasetID.2(anchor.df = all.anchors, offsets = offsets, obj.lengths = objects.ncell)  ##add dataset IDs
   command <- LogSeuratCommand(object = object.list[[1]], return.command = TRUE)
-  anchor.set <- new(Class = "AnchorSet",
+  anchor.set <- new(Class = "IntegrationAnchorSet",
                     object.list = object.list,
                     reference.objects = reference %||% seq_along(object.list),
                     anchors = all.anchors,
@@ -733,7 +767,7 @@ FindNN.Seurat <- function(
       eps = eps
     )
   }
-
+  
   object <- SetIntegrationData(
     object = object,
     integration.name = integration.name,
@@ -872,7 +906,7 @@ FilterAnchors.Seurat <- function(
     method = nn.method,
     eps = eps
   )
-
+  
   anchors <- GetIntegrationData(object = object, integration.name = integration.name, slot = "anchors")
   position <- sapply(X = 1:nrow(x = anchors), FUN = function(x) {
     which(x = anchors[x, "cell2"] == Indices(object = nn)[anchors[x, "cell1"], ])[1]
@@ -979,14 +1013,14 @@ FindAnchors.wdist <- function(
     eps = eps,
     verbose = verbose
   )
-
+  
   object.pair <- FindAnchorPairs.Seurat(
     object = object.pair,
     integration.name = "integrated",
     k.anchor = k.anchor,
     verbose = verbose
   )
-
+  
   if (!is.na(x = k.filter)) {
     top.features <- TopDimFeatures.Seurat(
       object = object.pair,
@@ -1017,7 +1051,7 @@ FindAnchors.wdist <- function(
       k.score = k.score
     )
   }
-
+  
   ###Return distances
   anc.tab <- object.pair@tools$integrated@anchors
   d1.2 <- numeric(length = dim(anc.tab)[1])
@@ -1028,16 +1062,16 @@ FindAnchors.wdist <- function(
     d1.2[r] <- object.pair@tools$integrated@neighbors$nnab@nn.dist[c1, which(object.pair@tools$integrated@neighbors$nnab@nn.idx[c1,] == c2 )]
     d2.1[r] <- object.pair@tools$integrated@neighbors$nnba@nn.dist[c2, which(object.pair@tools$integrated@neighbors$nnba@nn.idx[c2,] == c1 )]
   }
-
+  
   object.pair@tools$integrated@anchors <- cbind(object.pair@tools$integrated@anchors, dist1.2=d1.2)
   object.pair@tools$integrated@anchors <- cbind(object.pair@tools$integrated@anchors, dist2.1=d2.1)
-
+  
   anchors <- GetIntegrationData(
     object = object.pair,
     integration.name = 'integrated',
     slot = 'anchors'
   )
-
+  
   return(anchors)
 }
 
@@ -1051,7 +1085,7 @@ AddDatasetID.2 <- function(
   offsets <- c(offsets, total.cells)
   row.offset <- rep.int(x = offsets[1:ndataset], times = obj.lengths)
   dataset <- rep.int(x = 1:ndataset, times = obj.lengths)
-
+  
   anchor.df <- data.frame(
     'cell1' = anchor.df[, 1] - row.offset[anchor.df[, 1]],
     'cell2' = anchor.df[, 2] - row.offset[anchor.df[, 2]],
