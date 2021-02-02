@@ -30,14 +30,6 @@ To install STACAS directly from the Git repository, run the following code from 
 if (!requireNamespace("remotes")) install.packages("remotes")
 library(remotes)
 
-if (!requireNamespace("BiocManager", quietly = TRUE))
-  install.packages("BiocManager")
-
-if (!requireNamespace("Seurat", quietly = TRUE)) {
-   BiocManager::install('multtest')
-   install.packages("Seurat")
-}
-
 remotes::install_github("carmonalab/STACAS")
 ```
 
