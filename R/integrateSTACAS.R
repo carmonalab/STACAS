@@ -121,7 +121,7 @@ FilterAnchors.STACAS <- function(
   dist.pct = 0.8
 ) {
   
-  min.anchors.warn = 50
+  min.anchors.warn = 100
   
   if(dist.pct<0 | dist.pct>1) {
     stop("Variable dist.pct must be a real number between 0 and 1")
