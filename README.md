@@ -12,12 +12,14 @@ To see `STACAS` in action on larger scale integration tasks towards the construc
 
 Multi-study integrated atlases:
 
-* tumor-infiltrating T cell atlas: http://TILatlas.unil.ch (Seurat object available at https://doi.org/10.6084/m9.figshare.12478571)
+* tumor-infiltrating T cell atlas: https://spica.unil.ch/refs/TIL (Seurat object available at https://doi.org/10.6084/m9.figshare.12478571)
 
-* viral infection CD8 T cell atlas: http://virusTcellAtlas.unil.ch/ (Seurat object available at https://doi.org/10.6084/m9.figshare.12489518)
+* viral infection CD8 T cell atlas: https://spica.unil.ch/refs/viral-CD8-T (Seurat object available at https://doi.org/10.6084/m9.figshare.12489518)
+
+* viral infection CD4 T cell atlas: https://spica.unil.ch/refs/viral-CD4-T (Seurat object available at https://doi.org/10.6084/m9.figshare.16592693)
 
 
-Find the installation instructions for the package below, and a vignette detailing its functions at [Tutorial (html)](https://carmonalab.github.io/STACAS/tutorial.html) and [Tutorial (repository)](https://gitlab.unil.ch/carmona/STACAS.demo)
+Find the installation instructions for the package below, and a vignette detailing its functions at [Tutorial (html)](https://carmonalab.github.io/STACAS.demo/tutorial.html) and [Tutorial (repository)](https://github.com/carmonalab/STACAS.demo)
 
 If you prefer to avoid installing R packages, you can run `STACAS` in Docker.
 A ready-to-use Docker image with usage instructions is available on [DockerHub](https://hub.docker.com/repository/docker/mandrea1/stacas_demo)
@@ -46,9 +48,9 @@ STACAS.anchors <- Run.STACAS(STACAS.sampledata)
 
 ### STACAS integration TUTORIAL
 
-Find a tutorial for `STACAS` in a complete Seurat integration pipeline at: [STACAS Tutorial](https://carmonalab.github.io/STACAS/tutorial.html)
+Find a tutorial for `STACAS` in a complete Seurat integration pipeline at: [STACAS Tutorial](https://carmonalab.github.io/STACAS.demo/tutorial.html)
 
-To run the code of the tutorial on your machine, download the demo repository: [STACAS Tutorial repo](https://gitlab.unil.ch/carmona/STACAS.demo) or obtain a [Docker image](https://hub.docker.com/repository/docker/mandrea1/stacas_demo) with all dependencies pre-installed.
+To run the code of the tutorial on your machine, download the demo repository: [STACAS Tutorial repo](https://github.com/carmonalab/STACAS.demo) or obtain a [Docker image](https://hub.docker.com/repository/docker/mandrea1/stacas_demo) with all dependencies pre-installed.
 
 ### Documentation
 
