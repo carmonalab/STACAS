@@ -157,3 +157,14 @@ inconsistent_anchors <- function(anchors,pred.colname,scoring = F){
 }
 
 
+process_obj <- function(obj, seed = 1234, nfeat = 800, assay = "RNA", ndim=10, find_variable_features = T){
+  obj <- ScaleData(obj, verbose = TRUE)
+  if(find_variable_features){
+    obj <- FindVariableFeatures(obj, selection.method = "vst", nfeatures = nfeat , verbose = FALSE)
+  }
+  obj <- RunPCA(obj, features = (obj@assays[[assay]])@var.features,
+                  ndims.print = 1:5, nfeatures.print = 5)
+  
+  obj <- RunUMAP(obj, reduction = "pca", dims = 1:ndim, seed.use=seed, n.neighbors = 30, min.dist=0.3)
+  return(obj)
+}
