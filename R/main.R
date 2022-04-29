@@ -1,12 +1,38 @@
-#alpha = 1: distance based score (no knn is considered)
-#alpha = 0: knn based score
-#alpha = 0.5 equal weight for distance and knn (dot product) for score computing. 
-# beta = 1: all inconsistent anchors will be removed
-# beta = 0.5 allows some anchors randomly be accepted because its score is above a given quantile threshold of "non-inconsistent anchor score distribution" (q_boltzman)
-# beta = 0: all inconsistent anchors having a score above the given quantile of non-inconsistent anchor score distribution, will be accepted. 
-# beta = 0, q_boltzman = 0: all anchors will be accepted either inconsistent or not (not recommended)
-# dist.hard.threshold is intended to reproduce similar behaviour to original STACAS algorithm (but avoiding Errors because lack of anchors)  ## ToDo a warning must be set here when few anchors survive
-scoring_anchors_by_distance <- function(anchors, alpha = 0.5, remove_inconsistent_anchors = T, dist.hard.thr = NULL,
+#' Anchor scoring function 
+#'
+#' Score anchors by mixing MNN based score and PCA based anchor distance
+#'
+#' @param anchors anchor object obtained from \code{inconsistent_anchors} STACAS function. - Scoring will be applied to this object
+#' @param alpha A tabular model with scGate signatures. See Details for this format
+#' @param remove_inconsistent_anchors 
+#' @param dist.hard.thr hard threshold to emulate the classical STACAS behavior
+#' @param dist.mean.center center of logistic function for transforming PCA distance
+#' @param dist.mean.scale scale of logistic function for transforming PCA distance
+#' @param q.dist.mean.center center of logistic function based on quantile value of PCA  distance distribution
+#' @param dist.scale.factor scale factor of logistic function based on standard deviation of PCA distance distribution  
+#' @param beta this parameter controls the way in which inconsistent anchors will be penalized. 
+#' @param q_boltzmann this parameter defines a a baseline threshold to decide if reject an inconsistent anchor or not.
+#' @param plot logical indicating if scoring must be plotted as a function of PCA distance
+
+#' @return A new anchor object with modified anchor's scoring.
+#' @details beta = 1: all inconsistent anchors will be removed. 
+#' beta = 0 (q_boltzmann != 0)  all inconsistent anchors having a score above the given quantile of non-inconsistent anchor score distribution, will be accepted.
+#' In the interval (0,1), this parameter allows inconsistent anchors to be randomly accepted with a boltzman distribution probability which scale is controled by beta. 
+#' The higher beta, the lower probability or rejecting an inconsistent anchor.  
+#' beta = 0 (q_boltzmann = 0) all anchors will be accepted either inconsistent or not (not recommended)
+#' alpha = 1: distance based score (no knn is considered)
+#' alpha = 0: knn based score
+#' alpha = 0.5 equal weight for distance and knn (dot product) for score computing. 
+# 
+#' beta = 0.5 allows some anchors randomly be accepted because its score is above a given quantile threshold of "non-inconsistent anchor score distribution" (q_boltzman)
+#' beta = 0:  
+#' beta = 0, q_boltzman = 0: all anchors will be accepted either inconsistent or not (not recommended)
+#' dist.hard.threshold is intended to reproduce similar behaviour to original STACAS algorithm (but avoiding Errors because lack of anchors)  ## ToDo a warning must be set here when few anchors survive
+
+#' @examples
+#' library(STACAS)
+#' @export
+scoring_anchors <- function(anchors, alpha = 0.5, remove_inconsistent_anchors = T, dist.hard.thr = NULL,
                                         dist.mean.center = NULL,dist.mean.scale = NULL, q.dist.mean.center = NULL, dist_scale_factor = 1,
                                         beta = 0.5, q_boltzmann = 0.8, plot =F){
   df <- anchors@anchors
@@ -56,14 +82,30 @@ scoring_anchors_by_distance <- function(anchors, alpha = 0.5, remove_inconsisten
   return(anchors)
 }
 
+#' Integration tree generation 
+#'
+#' Build an integration tree by clustering samples in a hierarchical manner. Cumulative scoring among anchor pairs will be used as pairwise similarity criteria of samples.
+#' 
+#' @param anchorset scored anchors  obtained from \code{scoring_anchors} STACAS function
+#' @param hclust.method custering method to be used (complete, average, single, ward, etc) 
+#' @param usecol colum name to be used to compute sample similarity. Default "score"
+#' @param dist.hard.thr distance threshold used to mimic original STACAS behaviour
+#' @param method agregation method to be used among anchors for sample similarity computation. Default: cum.sum
+#' @param plot logical indicating if dendrogram must be ploted
 
-## This is actually not recovering the STACAS precedent behaviour when dist.hard.thr is set (REVISE AND MODIFY)
+#' @return A n integration tree to be passed to the integration function.
+#' @details 
+#' @examples
+#' library(STACAS)
+#' @export
+
 SampleTree.weighted <- function (
   anchorset,
   hclust.method = "complete",
   usecol = "score",
   dist.hard.thr = NULL,
-  method = "cum.sum"
+  method = "cum.sum",
+  plot = T
 ) {
   object.list <- slot(object = anchorset, name = "object.list")
   reference.objects <- slot(object = anchorset, name = "reference.objects")
@@ -93,7 +135,9 @@ SampleTree.weighted <- function (
   #minor change: use 1- simil instead of 1/simil
   #distance.matrix <- as.dist(m = 1 / similarity.matrix)
   distance.matrix <- as.dist(m = 1 - similarity.matrix)
-  plot(hclust(d = distance.matrix,method = hclust.method))
+  if(plot){
+    plot(hclust(d = distance.matrix,method = hclust.method))
+  }
   sample.tree <- hclust(d = distance.matrix,method = hclust.method)$merge
   sample.tree <- AdjustSampleTree.Seurat(x = sample.tree, reference.objects = reference.objects)
   
@@ -121,33 +165,51 @@ SampleTree.weighted <- function (
 }
 
 
-# Count anchors between data sets
-# IMPORTED from Seurat 3.2.1
-weighted.Anchors.STACAS <- function(
-  anchor.df,
-  offsets,
-  obj.lengths,
-  usecol = "score",
-  method = "cum.sum"
-) {
-  usecol = match.arg(arg = usecol ,choices = c("dist.mean","score"))
-  method = match.arg(arg = method ,choices = c("cum.sum","counts"))
-  
-  similarity.matrix <- matrix(data = 0, ncol = length(x = offsets), nrow = length(x = offsets))
-  similarity.matrix[upper.tri(x = similarity.matrix, diag = TRUE)] <- NA
-  total.cells <- sum(obj.lengths)
-  offsets <- c(offsets, total.cells)
-  for (i in 1:nrow(x = similarity.matrix)){
-    for (j in 1:ncol(x = similarity.matrix)){
-      if (!is.na(x = similarity.matrix[i, j])){
-        relevant.rows <- anchor.df[(anchor.df$dataset1 %in% c(i, j)) & (anchor.df$dataset2 %in% c(i, j)), ]
-        score <- strength_function(relevant.rows, method = method, usecol = usecol)/2
-        ncell <- min(obj.lengths[[i]], obj.lengths[[j]])
-        similarity.matrix[i, j] <- score / ncell
-      }
-    }
+#' Mark anchor as inconsistent based on cell-type labeling 
+#'
+#' Anchors will be consider as inconsistent if they are linking cells classified as different cell populations. 
+#'
+#' @param anchors anchor object obtained from STACAS function \code{FindAnchors.STACAS} or the Seurat function \code{FindAnchors}. 
+#' @param pred.colname colname of seurat object containing consistent celltype information across all samples/datasets 
+#' @param scoring
+#' 
+#' @return A n integration tree to be passed to the integration function.
+#' @details 
+#' @examples
+#' library(STACAS)
+#' @export
+
+inconsistent_anchors <- function(anchors,pred.colname){
+  labels <- data.frame()
+
+  for(i in anchors@reference.objects){
+    x <-anchors@object.list[[i]]
+    labels <- rbind(labels,data.frame(dataset = i, ncell = 1:ncol(x), label = x[[pred.colname]]))
   }
-  return(similarity.matrix)
+  
+  
+  not_assigned_flag <- is.na(labels[,pred.colname])| (labels[,pred.colname]== "NaN")
+  labels[not_assigned_flag,pred.colname] <- "not.assigned"
+  #message(labels%>%head())
+  
+  df.anch <- anchors@anchors
+  merged = merge(df.anch,labels,by.x = c("dataset1","cell1"),by.y = c("dataset","ncell")) 
+  merged = merge(merged,labels,by.x = c("dataset2","cell2"),by.y = c("dataset","ncell"), suffixes = c("_1","_2")) 
+  
+  #not_assigned <- merged[,c(paste0(pred.colname,"_1"),paste0(pred.colname,"_2"))] ==  "not.assigned"
+  #no_info = apply(not_assigned,1,any)
+  
+  match_ok <- (merged[,paste0(pred.colname,"_1")] == merged[,paste0(pred.colname,"_2")])  
+  label_asigned <- (merged[,paste0(pred.colname,"_1")] != "not.assigned") & (merged[,paste0(pred.colname,"_2")] != "not.assigned")
+  merged[merged == "not.assigned"] <- NaN
+  
+  merged$flag <- (!match_ok & label_asigned) + 0
+  
+  col.order = colnames(anchors@anchors)
+  extra_cols <- setdiff(colnames(merged), col.order)
+  
+  anchors@anchors <- merged[,c(col.order,extra_cols)]  # keep only consistent anchors (THIS GET BROKEN BECAUSE FEW ANCHORS AMONG SOME DATASET PAIRS)
+  return(anchors)
 }
 
 
