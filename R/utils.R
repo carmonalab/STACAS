@@ -67,104 +67,33 @@ strength_function <- function(anchor.df,
   return(strength)    
 }
 
-
-
-## Radar plot for comparing 2 or more clusters in the same dataset. 
-RadarPlot <- function(obj,meta.data.column, genes4radar = NULL, assay = "RNA",slot = "data"){
+# Count anchors between data sets
+# IMPORTED from Seurat 3.2.1
+weighted.Anchors.STACAS <- function(
+  anchor.df,
+  offsets,
+  obj.lengths,
+  usecol = "score",
+  method = "cum.sum"
+) {
+  usecol = match.arg(arg = usecol ,choices = c("dist.mean","score"))
+  method = match.arg(arg = method ,choices = c("cum.sum","counts"))
   
-  if(is.null(genes4radar)){  
-    genes4radar <- c("Cd4", "Cd8a", "Tcf7", "Ccr7", 
-                     "Gzmb", "Gzmk", "Pdcd1", "Tox", "Mki67")
-  }
-  useData <- GetAssayData(obj, assay = assay, slot = slot)
-  genes4radar <- intersect(genes4radar, row.names(useData))
-  genes4radar <- sort(genes4radar)
-  
-  df <- data.frame(list("Gene"= genes4radar))
-  rownames(df) <- df$Gene
-  df2 <- merge(df, useData, by = 0);
-  df2 <- df2[,-1]
-  df3 <- df2%>%melt(id.vars = "Gene")
-  colnames(df3)[2:3] <- c("cell","expression")
-  
-  aux = obj@meta.data[,meta.data.column,drop =F]
-  aux$cell <- aux%>%rownames()
-  
-  ncolors = length(unique(aux[,meta.data.column]))
-  radar.colors <- c("black", hue_pal()(ncolors - 1))
-  
-  df4 <- merge(df3,aux,by = "cell")
-  df4$cluster <- df4[,meta.data.column]
-  
-  df5 <- df4%>%group_by(Gene,cluster) %>% summarise(Expression = mean(expression))
-  
-  # Now, radar plot
-  ymin = min(df5$Expression)
-  ymax = max(df5$Expression)
-  #                 ,"Expression","cluster")
-  plt <- ggplot(data = df5, aes(x = Gene, y = Expression, 
-                                group = cluster, colour = cluster, fill = cluster)) + 
-    geom_point(size = 2) + geom_polygon(size = 0.75, 
-                                        alpha = 0.1) + ylim(ymin, ymax) + scale_x_discrete()  +
-    scale_fill_manual(values = radar.colors) + scale_colour_manual(values = radar.colors) +
-    theme_light() + theme(axis.text.x = element_blank()) + 
-    annotate(geom = "text", x = seq(1, length(genes4radar))*0.98, 
-             y = ymax - 0.05  , label = genes4radar, 
-             size = 3) + 
-    coord_polar()
-  return(plt)
-}
-
-
-# Deprecated function
-inconsistent_anchors <- function(anchors,pred.colname,scoring = F){
-  labels <- data.frame()
-  if(scoring){
-    score.colname <- sprintf("score_%s",pred.colname)
-    for(i in anchors@reference.objects){
-      x <-anchors@object.list[[i]]
-      labels <- rbind(labels,data.frame(dataset = i, ncell = 1:ncol(x), label = x[[pred.colname]], scoring = x[[score.colname]]))
-    }
-  }else{
-    for(i in anchors@reference.objects){
-      x <-anchors@object.list[[i]]
-      labels <- rbind(labels,data.frame(dataset = i, ncell = 1:ncol(x), label = x[[pred.colname]]))
+  similarity.matrix <- matrix(data = 0, ncol = length(x = offsets), nrow = length(x = offsets))
+  similarity.matrix[upper.tri(x = similarity.matrix, diag = TRUE)] <- NA
+  total.cells <- sum(obj.lengths)
+  offsets <- c(offsets, total.cells)
+  for (i in 1:nrow(x = similarity.matrix)){
+    for (j in 1:ncol(x = similarity.matrix)){
+      if (!is.na(x = similarity.matrix[i, j])){
+        relevant.rows <- anchor.df[(anchor.df$dataset1 %in% c(i, j)) & (anchor.df$dataset2 %in% c(i, j)), ]
+        score <- strength_function(relevant.rows, method = method, usecol = usecol)/2
+        ncell <- min(obj.lengths[[i]], obj.lengths[[j]])
+        similarity.matrix[i, j] <- score / ncell
+      }
     }
   }
-  
-  not_assigned_flag <- is.na(labels[,pred.colname])| (labels[,pred.colname]== "NaN")
-  labels[not_assigned_flag,pred.colname] <- "not.assigned"
-  #message(labels%>%head())
-  
-  df.anch <- anchors@anchors
-  merged = merge(df.anch,labels,by.x = c("dataset1","cell1"),by.y = c("dataset","ncell")) 
-  merged = merge(merged,labels,by.x = c("dataset2","cell2"),by.y = c("dataset","ncell"), suffixes = c("_1","_2")) 
-  
-  #not_assigned <- merged[,c(paste0(pred.colname,"_1"),paste0(pred.colname,"_2"))] ==  "not.assigned"
-  #no_info = apply(not_assigned,1,any)
-  
-  match_ok <- (merged[,paste0(pred.colname,"_1")] == merged[,paste0(pred.colname,"_2")])  
-  label_asigned <- (merged[,paste0(pred.colname,"_1")] != "not.assigned") & (merged[,paste0(pred.colname,"_2")] != "not.assigned")
-  merged[merged == "not.assigned"] <- NaN
-  
-  merged$flag <- (!match_ok & label_asigned) + 0
-  
-  col.order = colnames(anchors@anchors)
-  extra_cols <- setdiff(colnames(merged), col.order)
-  
-  anchors@anchors <- merged[,c(col.order,extra_cols)]  # keep only consistent anchors (THIS GET BROKEN BECAUSE FEW ANCHORS AMONG SOME DATASET PAIRS)
-  return(anchors)
+  return(similarity.matrix)
 }
 
 
-process_obj <- function(obj, seed = 1234, nfeat = 800, assay = "RNA", ndim=10, find_variable_features = T){
-  obj <- ScaleData(obj, verbose = TRUE)
-  if(find_variable_features){
-    obj <- FindVariableFeatures(obj, selection.method = "vst", nfeatures = nfeat , verbose = FALSE)
-  }
-  obj <- RunPCA(obj, features = (obj@assays[[assay]])@var.features,
-                  ndims.print = 1:5, nfeatures.print = 5)
-  
-  obj <- RunUMAP(obj, reduction = "pca", dims = 1:ndim, seed.use=seed, n.neighbors = 30, min.dist=0.3)
-  return(obj)
-}
