@@ -1,16 +1,18 @@
-Package: STACAS
+Package: ssSTACAS
 Type: Package
 Title: STACAS: Sub-Type Anchoring Correction for Alignment in Seurat
-Version: 1.1.0
+Version: 2.0.0
 Authors@R: c(
-  person(given = 'Massimo', family = 'Andreatta', email = 'massimo.andreatta@unil.ch', role = c('aut','cre'), comment = c(ORCID = '0000-0002-8036-2647')),
+  person(given = 'Ariel', family = 'Berenstein', email = 'arieljberenstein@gmail.com', role = c('aut'), comment = c(ORCID = '0000-0001-8540-5389')),
+  person(given = 'Massimo', family = 'Andreatta', email = 'massimo.andreatta@unil.ch', role = c('aut'), comment = c(ORCID = '0000-0002-8036-2647')),
   person(given = 'Santiago', family = 'Carmona', email = 'santiago.carmona@unil.ch', role = c('aut'), comment = c(ORCID = '0000-0002-2495-0671'))
   )
 Description: This package implements methods for determining anchors for Seurat alignment, used in pipelines
     for batch correction and integration of scRNA-seq datasets. In particular, STACAS is optimized for the
     integration of heterogenous datasets with only limited overlap between cell sub-types (e.g. TIL sets of
     CD8 from tumor with CD8/CD4 T cells from lymphnode), for which the default Seurat alignment methods
-    would tend to over-correct biological differences.
+    would tend to over-correct biological differences. The 2.0 version of our package allows to the users to 
+    incorporate explicit information about cell-types in order to assist the integration process. 
 Depends: R (>= 3.6.1)
 Imports:
     Seurat(>= 4.0.0),
