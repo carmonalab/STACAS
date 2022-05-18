@@ -13,6 +13,7 @@ Description: This package implements methods for determining anchors for Seurat 
     CD8 from tumor with CD8/CD4 T cells from lymphnode), for which the default Seurat alignment methods
     would tend to over-correct biological differences. The 2.0 version of our package allows to the users to 
     incorporate explicit information about cell-types in order to assist the integration process.
+biocViews:
 Depends: R (>= 3.6.1)
 Imports:
     Seurat(>= 4.0.0),
@@ -24,4 +25,5 @@ Imports:
     gridExtra
 License: GPL-3
 Encoding: UTF-8
-LazyData: true
+LazyData: false
+RoxygenNote: 7.2.0
