@@ -7,11 +7,10 @@
 SampleTree.STACAS(
   anchorset,
   obj.names = NULL,
-  hclust.method = "complete",
+  hclust.method = c("average", "single", "complete"),
   usecol = "score",
-  dist.hard.thr = NULL,
-  method = "cum.sum",
-  plot = T
+  method = c("weight.sum", "counts"),
+  plot = TRUE
 )
 }
 \arguments{
@@ -21,11 +20,11 @@ SampleTree.STACAS(
 
 \item{usecol}{colum name to be used to compute sample similarity. Default "score"}
 
-\item{dist.hard.thr}{distance threshold used to mimic original STACAS behaviour}
-
 \item{method}{agregation method to be used among anchors for sample similarity computation. Default: cum.sum}
 
 \item{plot}{logical indicating if dendrogram must be ploted}
+
+\item{dist.hard.thr}{distance threshold used to mimic original STACAS behaviour}
 }
 \value{
 A n integration tree to be passed to the integration function.

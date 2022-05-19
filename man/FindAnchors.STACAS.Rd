@@ -14,7 +14,7 @@ FindAnchors.STACAS(
   k.anchor = 5,
   k.score = 30,
   cell.labels = NULL,
-  verbose = TRUE
+  verbose = FALSE
 )
 }
 \arguments{

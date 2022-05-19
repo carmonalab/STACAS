@@ -27,6 +27,7 @@
 #' @return Returns an AnchorSet object, which can be directly applied to Seurat integration using
 #'  \code{Seurat::IntegrateData}, or optionally first filtered/weighted by anchor pairwise distance
 #'  using \code{FilterAnchors.STACAS}
+#' @import Seurat
 #' @export
 
 FindAnchors.STACAS <- function (
@@ -39,7 +40,7 @@ FindAnchors.STACAS <- function (
   k.anchor = 5,
   k.score = 30,
   cell.labels = NULL,
-  verbose = TRUE
+  verbose = FALSE
 ) {
   
   scale = FALSE
@@ -62,19 +63,26 @@ FindAnchors.STACAS <- function (
     assay <- sapply(X = object.list, FUN = DefaultAssay)
   }
   
-  #anchor features
-  if (is.numeric(x = anchor.features)) {
+  #Calculate anchor genes
+  if (is.numeric(anchor.features)) {
+    
+    #Genes to exclude from variable features
+    genes.block <- get.blocklist(object.list[[1]])
+    
     n.this <- anchor.features
     if (verbose) {
       message("Computing ", anchor.features, " integration features")
     }
+    object.list <- lapply(object.list, function(x) {
+      select.variable.genes(x, nfeat = n.this, min.exp=0.01, max.exp=3, blacklist=genes.block)
+    })
+    
+    #Combine variable features from multiple samples into single list
     anchor.features <- SelectIntegrationFeatures(
       object.list = object.list,
-      nfeatures = n.this*2,
+      nfeatures = n.this,
       assay = assay
     )
-    #Remove cell cycling genes
-    anchor.features <- head(setdiff(anchor.features, cycling.genes.STACAS), n.this)  #improve this selection?
   }
   
   #prepare PCA without data-rescaling
@@ -87,7 +95,7 @@ FindAnchors.STACAS <- function (
   }
   cat("\n")
   
-  #perform rPCA to find anchors
+  #Find pairwise anchors and keep distance information
   if (is.null(reference)) {
     ref.anchors <- FindIntegrationAnchors.wdist(object.list, dims = dims, k.anchor = k.anchor, anchor.features=anchor.features,
                                                 normalization.method = normalization.method,
@@ -120,8 +128,6 @@ FindAnchors.STACAS <- function (
 #' @param semi_supervised Use consistency between cell type labels to remove anchors.
 #' @param dist.pct Center of logistic function, based on quantile value of rPCA distance distribution
 #' @param dist.scale.factor Scale factor for logistic function (multiplied by SD of rPCA distance distribution)
-#' @param beta Controls the way in which inconsistent anchors will be penalized. 
-#' @param q_boltzmann Defines a baseline threshold to decide if reject an inconsistent anchor or not
 
 #' @return A new anchor object with reweighted anchors scores, and optionally filtered by consistency of cell type annotation
 #' @export
@@ -131,9 +137,8 @@ FilterAnchors.STACAS <- function(ref.anchors,
                                  alpha = 0.5,
                                  semi_supervised = FALSE,
                                  dist.pct = 0.5,
-                                 dist.scale.factor = 1,
-                                 beta = 0.5,
-                                 q_boltzmann = 0.8){
+                                 dist.scale.factor = 2)
+{
   df <- ref.anchors@anchors
   knn_score <- df$score
   epsilon <- 10^(-10)
@@ -148,7 +153,6 @@ FilterAnchors.STACAS <- function(ref.anchors,
   
   df$score[df$score < epsilon ] <- epsilon 
  
-  #reject_anchors <- boltzmann_based_rejection(scoring = stacas_scoring,inconsistent_flag = df$flag, beta = beta,q = q_boltzmann)
   if (semi_supervised) {
     if ("flag" %in% colnames(df)) {
        df <- df[df$flag==TRUE,]
@@ -179,26 +183,26 @@ FilterAnchors.STACAS <- function(ref.anchors,
 SampleTree.STACAS <- function (
     anchorset,
     obj.names = NULL,
-    hclust.method = "complete",
+    hclust.method = c("average","single","complete"),
     usecol = "score",
-    dist.hard.thr = NULL,
-    method = "cum.sum",
-    plot = T
+    method = c("weight.sum","counts"),
+    plot = TRUE
 ) {
+  
+  hclust.method <- hclust.method[1]
+  method <- method[1]
+  
   object.list <- slot(object = anchorset, name = "object.list")
   reference.objects <- slot(object = anchorset, name = "reference.objects")
   anchors <- slot(object = anchorset, name = "anchors")
+  
   objects.ncell <- sapply(X = object.list, FUN = ncol)
   offsets <- slot(object = anchorset, name = "offsets")
-  usecol = match.arg(arg = usecol ,choices = c("dist.mean","score"))
-  method = match.arg(arg = method ,choices = c("cum.sum","counts"))
   
-  if(!is.null(dist.hard.thr)){
-    anchors <- anchors%>%subset(dist.mean < dist.hard.thr)
-    usecol = "dist.mean"
-    method = "counts"  ## Force count anchors instead of weighted sum  to mimic original STACAS behaviour
-  }  
-  ## Main change in the way of computing similarity matrix
+  usecol = match.arg(arg = usecol ,choices = c("dist.mean","score"))
+  method = match.arg(arg = method ,choices = c("weight.sum","counts"))
+  
+  ## Compute similarity matrix between datasets
   similarity.matrix <- weighted.Anchors.STACAS(
     anchor.df = anchors,
     offsets = offsets,
@@ -217,13 +221,14 @@ SampleTree.STACAS <- function (
   #minor change: use 1- simil instead of 1/simil
   #distance.matrix <- as.dist(m = 1 / similarity.matrix)
   distance.matrix <- as.dist(m = 1 - similarity.matrix)
+  
   if(plot){
     plot(hclust(d = distance.matrix,method = hclust.method))
   }
   sample.tree <- hclust(d = distance.matrix,method = hclust.method)$merge
   sample.tree <- AdjustSampleTree.Seurat(x = sample.tree, reference.objects = reference.objects)
   
-  #precalculate anchors between sets
+  #Sum of anchors between sets
   nanch <- list()
   names(x = object.list) <- as.character(-(1:length(x = object.list)))
   for (i in 1:length(object.list)) {
@@ -232,15 +237,16 @@ SampleTree.STACAS <- function (
   
   for (r in 1:nrow(sample.tree)) {
     pair <- sample.tree[r, ]
+    
     length1 <- nanch[[as.character(pair[1])]]
     length2 <- nanch[[as.character(pair[2])]]
-    
+
     if (length2 > length1) {
       pair <- rev(pair)
       sample.tree[r, ] <- pair
     }
     
-    nanch[[as.character(r)]] <- length1+length2
+    nanch[[as.character(r)]] <- length1 + length2  #cumulative (weighted) # of anchors
   }
   return(sample.tree)
 }

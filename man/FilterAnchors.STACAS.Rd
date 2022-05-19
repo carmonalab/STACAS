@@ -9,9 +9,7 @@ FilterAnchors.STACAS(
   alpha = 0.5,
   semi_supervised = FALSE,
   dist.pct = 0.5,
-  dist.scale.factor = 1,
-  beta = 0.5,
-  q_boltzmann = 0.8
+  dist.scale.factor = 2
 )
 }
 \arguments{
@@ -24,10 +22,6 @@ FilterAnchors.STACAS(
 \item{dist.pct}{Center of logistic function, based on quantile value of rPCA distance distribution}
 
 \item{dist.scale.factor}{Scale factor for logistic function (multiplied by SD of rPCA distance distribution)}
-
-\item{beta}{Controls the way in which inconsistent anchors will be penalized.}
-
-\item{q_boltzmann}{Defines a baseline threshold to decide if reject an inconsistent anchor or not}
 }
 \value{
 A new anchor object with reweighted anchors scores, and optionally filtered by consistency of cell type annotation

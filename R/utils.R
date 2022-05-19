@@ -45,39 +45,12 @@ inconsistent_anchors <- function(anchors, cell.labels=NULL){
   return(anchors)
 }
 
-
-
-# Boltzmann_based rejection of inconsistent anchors
-# q: quantile score of non-inconsistent anchors
-# Beta = 1: q is completely ignored. This represent a maximum confidence in our labeling. None inconsistent anchor will be accepted.
-# Beta = 0: deterministic theta quantile behavior:  All inconsistent anchors with scoring higher than "q", will be accepted.
-# Beta in [0-1] range: Boltzmann based acceptation behavior. Only anchors with higher score than "q" could be accepted with a probability that increases with their score.  
-# Beta = 0, q = 0: Completely ignoring of labeling: All anchors will be accepted, either being inconsistent or not
-# Default: theta = 0.8; beta = 0.5
-boltzmann_based_rejection <- function(scoring,inconsistent_flag,beta = 0.5, q = 0.8){
-  e0 <- quantile(scoring[!as.logical(inconsistent_flag)],q)  # scale is given by q75 score in NON inconsistent anchors
-  DE <- scoring[as.logical(inconsistent_flag)] - e0             #Delta Energy is given by the actual score of inconsistent anchors.   
-  kT = quantile(DE[DE>0],beta)
-  rejection_proba <- sapply(exp(-DE/kT),function(x){min(1,x)})
-  #plot(E+e0,rejection_proba,xlab = "score")
-  rejection_inconsist <- runif(length(DE),0,1) < rejection_proba**(1-beta)
-  rejection <- rep(F,length(scoring))
-  
-  # this if is necesary because b = 0 and q = 0 could yet reject a few anchors (those inconsistent ones having higher score than the minumum of the non-inconsistent distribution)
-  if(beta != 0 & q != 0){
-    rejection[as.logical(inconsistent_flag)] <- rejection_inconsist
-  }
-  #table(rejection)  
-  return(rejection)
-}
-
-
 # To be used in the distance matrix among datasets (when building SampleTree integration)
 strength_function <- function(anchor.df,
-                              method = "cum.sum", 
+                              method = "weight.sum", 
                               usecol = "dist.mean"
                               ){
-  method = match.arg(arg = method ,choices = c("counts","mean.score","cum.sum"))
+  method = match.arg(arg = method ,choices = c("counts","mean.score","weight.sum"))
   usecol = match.arg(arg = usecol ,choices = c("dist.mean","score"))
   
   if(method== "counts") {
@@ -85,11 +58,11 @@ strength_function <- function(anchor.df,
   }
   
   if(method== "mean.score") {
-    if(usecol == "dist.mean")    strength <- 1- anchor.df[,usecol]%>%mean()
+    if(usecol == "dist.mean")    strength <- 1-anchor.df[,usecol]%>%mean()
     if(usecol == "score")    strength <- anchor.df[,usecol]%>%mean()
   }
 
-  if(method== "cum.sum") {
+  if(method== "weight.sum") {
     if(usecol == "dist.mean")  strength <- (1-anchor.df[,usecol])%>%sum()
     if(usecol == "score")  strength <- (anchor.df[,usecol])%>%sum()
   }
@@ -123,10 +96,10 @@ weighted.Anchors.STACAS <- function(
   offsets,
   obj.lengths,
   usecol = "score",
-  method = "cum.sum"
+  method = "weight.sum"
 ) {
   usecol = match.arg(arg = usecol ,choices = c("dist.mean","score"))
-  method = match.arg(arg = method ,choices = c("cum.sum","counts"))
+  method = match.arg(arg = method ,choices = c("weight.sum","counts"))
   
   similarity.matrix <- matrix(data = 0, ncol = length(x = offsets), nrow = length(x = offsets))
   similarity.matrix[upper.tri(x = similarity.matrix, diag = TRUE)] <- NA
@@ -143,6 +116,40 @@ weighted.Anchors.STACAS <- function(
     }
   }
   return(similarity.matrix)
+}
+
+select.variable.genes = function(obj, nfeat=1500, blacklist=NULL, min.exp=0.01, max.exp=3){
+  
+  obj <- Seurat::FindVariableFeatures(obj, nfeatures = nfeat)
+  
+  varfeat <- obj@assays$RNA@var.features
+  
+  if (!is.null(blacklist)) {
+    removeGenes1 <- varfeat[varfeat %in% unlist(blacklist)]
+    varfeat <- setdiff(varfeat, removeGenes1)
+  }
+  #Also remove genes that are very poorly or always expressed (=not really variable genes)
+  means <- apply(obj@assays$RNA@data[varfeat,], 1, mean)
+  removeGenes2 <- names(means[means<min.exp | means>max.exp])
+ 
+  varfeat <- setdiff(varfeat, removeGenes2 )
+  obj@assays$RNA@var.features <- varfeat
+  
+  return(obj)
+}  
+
+get.blocklist = function(obj) {
+  data("genes.blocklist")
+  unlist(genes.blocklist$Mm)
+  
+  mm <- intersect(unlist(genes.blocklist$Mm), rownames(obj))
+  hs <- intersect(unlist(genes.blocklist$Hs), rownames(obj))
+  
+  if (length(mm) > length(hs)) {
+    return(genes.blocklist$Mm)
+  } else {
+    return(genes.blocklist$Hs)
+  }
 }
 
 # Count anchors between data sets
@@ -277,6 +284,9 @@ FindIntegrationAnchors.wdist <- function(
     if (verbose) {
       message("Computing ", anchor.features, " integration features")
     }
+    
+    #NOTE: improve on the following function to exclude blacklisted genes (mito, ribo, cycling), as well as
+    #genes that are expressed in very few or all cells
     anchor.features <- SelectIntegrationFeatures(
       object.list = object.list,
       nfeatures = anchor.features,
