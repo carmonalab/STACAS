@@ -105,11 +105,10 @@ FindAnchors.STACAS <- function (
                                                 normalization.method = normalization.method,
                                                 scale=scale, reduction=reduction, assay=assay, k.score=k.score, verbose=verbose)
   }
-  for (r in 1:dim(ref.anchors@anchors)[1]) {
-    ref.anchors@anchors[r,"dist.mean"] <- mean(c(ref.anchors@anchors[r,"dist1.2"],ref.anchors@anchors[r,"dist2.1"]))
-    ref.anchors@anchors[r,"dist.max"] <- max(c(ref.anchors@anchors[r,"dist1.2"],ref.anchors@anchors[r,"dist2.1"]))
-    ref.anchors@anchors[r,"dist.min"] <- min(c(ref.anchors@anchors[r,"dist1.2"],ref.anchors@anchors[r,"dist2.1"]))
-  }
+  
+  #average reciprocal distances
+  mat <- ref.anchors@anchors[,c("dist1.2","dist2.1")]
+  ref.anchors@anchors['dist.mean'] <- apply(mat, 1, mean)
   
   if (!is.null(cell.labels)) {
      ref.anchors <- inconsistent_anchors(ref.anchors, cell.labels)
