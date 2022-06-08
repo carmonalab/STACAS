@@ -14,8 +14,6 @@ FindAnchors.STACAS(
   k.anchor = 5,
   k.score = 30,
   cell.labels = NULL,
-  accept_rate_ss = 0.5,
-  quantile_ss = 0.8,
   verbose = FALSE
 )
 }
@@ -45,10 +43,6 @@ If NULL (default), all pairwise anchors are found.}
 \item{cell.labels}{A metadata column name, storing cell type annotations. These will be taken into account
 for semi-supervised alignment (optional). Cells annotated as NA or NULL will not be penalized in semi-supervised
 alignment}
-
-\item{accept_rate_ss}{Probability of accepting inconsistent anchors with score above \code{quantile_ss}}
-
-\item{quantile_ss}{Distribution quantile on anchor scores to determine which inconsistent anchors to retain}
 
 \item{verbose}{Print all output}
 }

@@ -10,9 +10,7 @@ logistic <- function(x,scale = NULL, center = NULL, invert = F){
 # Mark anchor as inconsistent based on cell-type labeling 
 # Anchors will be consider as inconsistent if they are linking cells classified as different cell populations. 
 inconsistent_anchors <- function(anchors,
-                                 cell.labels=NULL,
-                                 accept_rate_ss=0.5,
-                                 quantile_ss=0.5){
+                                 cell.labels=NULL){
   
   if (! cell.labels %in% colnames(anchors@object.list[[1]]@meta.data)) {
     stop(sprintf("Please specify a valid metadata column with label annotations (cell.labels). %s not found", cell.labels))
@@ -44,10 +42,6 @@ inconsistent_anchors <- function(anchors,
   
   df$flag <- match_ok
   
-  #Apply Boltzmann-based rejection based on deterministic label agreement
-  if (quantile_ss < 1) {
-    df <- boltzmann_based_rejection(anchors=df, accept_rate = accept_rate_ss, q = quantile_ss)
-  }
   anchors@anchors <- df
   return(anchors)
 }

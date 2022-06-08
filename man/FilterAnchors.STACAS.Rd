@@ -7,9 +7,11 @@
 FilterAnchors.STACAS(
   ref.anchors,
   alpha = 0.5,
-  semi_supervised = FALSE,
   dist.pct = 0.5,
-  dist.scale.factor = 2
+  dist.scale.factor = 2,
+  semi_supervised = FALSE,
+  accept_rate_ss = 0.5,
+  quantile_ss = 0.8
 )
 }
 \arguments{
@@ -17,11 +19,15 @@ FilterAnchors.STACAS(
 
 \item{alpha}{Weight on rPCA distance for rescoring (between 0 and 1).}
 
-\item{semi_supervised}{Use consistency between cell type labels to remove anchors.}
-
 \item{dist.pct}{Center of logistic function, based on quantile value of rPCA distance distribution}
 
 \item{dist.scale.factor}{Scale factor for logistic function (multiplied by SD of rPCA distance distribution)}
+
+\item{semi_supervised}{Use consistency between cell type labels to remove anchors.}
+
+\item{accept_rate_ss}{Probability of accepting inconsistent anchors with score above \code{quantile_ss}}
+
+\item{quantile_ss}{Distribution quantile on anchor scores to determine which inconsistent anchors to retain}
 }
 \value{
 A new anchor object with reweighted anchors scores, and optionally filtered by consistency of cell type annotation

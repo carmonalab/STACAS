@@ -22,8 +22,6 @@
 #' @param cell.labels A metadata column name, storing cell type annotations. These will be taken into account
 #' for semi-supervised alignment (optional). Cells annotated as NA or NULL will not be penalized in semi-supervised
 #' alignment
-#' @param accept_rate_ss Probability of accepting inconsistent anchors with score above \code{quantile_ss} 
-#' @param quantile_ss Distribution quantile on anchor scores to determine which inconsistent anchors to retain
 #' @param verbose Print all output
 #' 
 #' @return Returns an AnchorSet object, which can be directly applied to Seurat integration using
@@ -42,8 +40,6 @@ FindAnchors.STACAS <- function (
   k.anchor = 5,
   k.score = 30,
   cell.labels = NULL,
-  accept_rate_ss = 0.5,
-  quantile_ss = 0.8,
   verbose = FALSE
 ) {
   
@@ -115,8 +111,7 @@ FindAnchors.STACAS <- function (
   ref.anchors@anchors['dist.mean'] <- apply(mat, 1, mean)
   
   if (!is.null(cell.labels)) {
-     ref.anchors <- inconsistent_anchors(ref.anchors, cell.labels,
-                                         accept_rate_ss=accept_rate_ss, quantile_ss=quantile_ss)
+     ref.anchors <- inconsistent_anchors(ref.anchors, cell.labels)
   }
   
   return(ref.anchors)
@@ -129,9 +124,11 @@ FindAnchors.STACAS <- function (
 #'
 #' @param ref.anchors A set of anchors calculated using \code{FindAnchors.STACAS}, containing the pairwise distances between anchors.
 #' @param alpha Weight on rPCA distance for rescoring (between 0 and 1).
-#' @param semi_supervised Use consistency between cell type labels to remove anchors.
 #' @param dist.pct Center of logistic function, based on quantile value of rPCA distance distribution
 #' @param dist.scale.factor Scale factor for logistic function (multiplied by SD of rPCA distance distribution)
+#' @param semi_supervised Use consistency between cell type labels to remove anchors.
+#' @param accept_rate_ss Probability of accepting inconsistent anchors with score above \code{quantile_ss} 
+#' @param quantile_ss Distribution quantile on anchor scores to determine which inconsistent anchors to retain
 
 #' @return A new anchor object with reweighted anchors scores, and optionally filtered by consistency of cell type annotation
 #' @export
@@ -139,9 +136,11 @@ FindAnchors.STACAS <- function (
 
 FilterAnchors.STACAS <- function(ref.anchors,
                                  alpha = 0.5,
-                                 semi_supervised = FALSE,
                                  dist.pct = 0.5,
-                                 dist.scale.factor = 2)
+                                 dist.scale.factor = 2,
+                                 semi_supervised = FALSE,
+                                 accept_rate_ss = 0.5,
+                                 quantile_ss = 0.8)
 {
   df <- ref.anchors@anchors
   knn_score <- df$score
@@ -159,6 +158,11 @@ FilterAnchors.STACAS <- function(ref.anchors,
  
   if (semi_supervised) {
     if ("flag" %in% colnames(df)) {
+      
+       #Apply Boltzmann-based rejection based on deterministic label agreement
+       if (quantile_ss < 1) {
+         df <- boltzmann_based_rejection(anchors=df, accept_rate = accept_rate_ss, q = quantile_ss)
+       }
        df <- df[df$flag==TRUE,]
     } else {
        warning("Cannot find 'flag' column in anchor object. Did you run FindAnchors.STACAS with cell.labels?
