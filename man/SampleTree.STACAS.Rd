@@ -14,17 +14,17 @@ SampleTree.STACAS(
 )
 }
 \arguments{
-\item{anchorset}{scored anchors  obtained from \code{scoring_anchors} STACAS function}
+\item{anchorset}{scored anchors  obtained from \code{FindAnchors.STACAS} and \code{FilterAnchors.STACAS} function}
 
-\item{hclust.method}{custering method to be used (complete, average, single, ward, etc)}
+\item{hclust.method}{clustering method to be used (complete, average, single, ward)}
 
-\item{usecol}{colum name to be used to compute sample similarity. Default "score"}
+\item{usecol}{column name to be used to compute sample similarity. Default "score"}
 
-\item{method}{agregation method to be used among anchors for sample similarity computation. Default: cum.sum}
+\item{method}{aggregation method to be used among anchors for sample similarity computation. Default: weight.sum}
 
 \item{plot}{logical indicating if dendrogram must be ploted}
 
-\item{dist.hard.thr}{distance threshold used to mimic original STACAS behaviour}
+\item{dist.hard.thr}{distance threshold used to mimic original STACAS behavior}
 }
 \value{
 A n integration tree to be passed to the integration function.

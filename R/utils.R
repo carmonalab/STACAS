@@ -219,25 +219,22 @@ FindIntegrationAnchors.wdist <- function(
     assay = NULL,
     reference = NULL,
     anchor.features = 2000,
-    scale = TRUE,
     normalization.method = c("LogNormalize", "SCT"),
     sct.clip.range = NULL,
-    reduction = c("cca", "rpca"),
     l2.norm = TRUE,
     dims = 1:10,
     k.anchor = 5,
     k.filter = 200,
     k.score = 30,
     max.features = 200,
-    nn.method = "rann",
-    eps = 0,
     verbose = TRUE
 ) {
+  
+  scale = FALSE
   normalization.method <- match.arg(arg = normalization.method)
-  reduction <- match.arg(arg = reduction)
-  if (reduction == "rpca") {
-    reduction <- "pca"
-  }
+  reduction <- "pca"
+  nn.method = "rann"
+  eps = 0
   my.lapply <- ifelse(
     test = verbose && future::nbrOfWorkers() == 1,
     yes = pbapply::pblapply,
@@ -964,6 +961,7 @@ FindAnchors.wdist <- function(
   return(anchors)
 }
 
+#Modified from Seurat 4.1.1
 AddDatasetID.2 <- function(
     anchor.df,
     offsets,
@@ -985,4 +983,234 @@ AddDatasetID.2 <- function(
     'dist2.1' = anchor.df[, 5]
   )
   return(anchor.df)
+}
+
+#Modified from Seurat 4.1.1
+ParseMergePair.local <- function(clustering, i){
+  # return 2-element list of datasets in first and second object
+  datasets <- list('object1' = clustering[i, 1], 'object2' = clustering[i, 2])
+  if (datasets$object1 > 0) {
+    datasets$object1 <- ParseRow(clustering, datasets$object1)
+  }
+  if (datasets$object2 > 0) {
+    datasets$object2 <- ParseRow(clustering, datasets$object2)
+  }
+  datasets$object1 <- abs(x = datasets$object1)
+  datasets$object2 <- abs(x = datasets$object2)
+  return(datasets)
+}
+
+#Modified from Seurat 4.1.1
+ParseRow <- function(clustering, i){
+  # returns vector of datasets
+  datasets <- as.list(x = clustering[i, ])
+  if (datasets[[1]] > 0) {
+    datasets[[1]] <- ParseRow(clustering = clustering, i = datasets[[1]])
+  }
+  if (datasets[[2]] > 0) {
+    datasets[[2]] <- ParseRow(clustering = clustering, i = datasets[[2]])
+  }
+  return(unlist(datasets))
+}
+
+#Modified from Seurat 4.1.1
+PairwiseIntegrateReference.STACAS <- function(
+    anchorset,
+    new.assay.name = "integrated",
+    normalization.method = c("LogNormalize", "SCT"),
+    features = NULL,
+    features.to.integrate = NULL,
+    dims = 1:30,
+    k.weight = 100,
+    weight.reduction = NULL,
+    sd.weight = 1,
+    sample.tree = NULL,
+    preserve.order = FALSE,
+    verbose = TRUE
+) {
+  object.list <- slot(object = anchorset, name = "object.list")
+  reference.objects <- slot(object = anchorset, name = "reference.objects")
+  features <- features %||% slot(object = anchorset, name = "anchor.features")
+  features.to.integrate <- features.to.integrate %||% features
+  if (length(x = reference.objects) == 1) {
+    ref.obj <- object.list[[reference.objects]]
+    
+    ref.obj[[new.assay.name]] <- CreateAssayObject(
+      data = GetAssayData(ref.obj, slot = 'data')[features.to.integrate, ]
+    )
+    DefaultAssay(object = ref.obj) <- new.assay.name
+    return(ref.obj)
+  }
+  anchors <- slot(object = anchorset, name = "anchors")
+  offsets <- slot(object = anchorset, name = "offsets")
+  objects.ncell <- sapply(X = object.list, FUN = ncol)
+  if (!is.null(x = weight.reduction)) {
+    if (length(x = weight.reduction) == 1 | inherits(x = weight.reduction, what = "DimReduc")) {
+      if (length(x = object.list) == 2) {
+        weight.reduction <- list(NULL, weight.reduction)
+      } else if (inherits(x = weight.reduction, what = "character")) {
+        weight.reduction <- as.list(x = rep(x = weight.reduction, times = length(x = object.list)))
+      } else {
+        stop("Invalid input for weight.reduction. Please specify either the names of the dimension",
+             "reduction for each object in the list or provide DimReduc objects.")
+      }
+    }
+    if (length(x = weight.reduction) != length(x = object.list)) {
+      stop("Please specify a dimension reduction for each object, or one dimension reduction to be used for all objects")
+    }
+    if (inherits(x = weight.reduction, what = "character")) {
+      weight.reduction <- as.list(x = weight.reduction)
+    }
+    available.reductions <- lapply(X = object.list, FUN = FilterObjects, classes.keep = 'DimReduc')
+    for (ii in 1:length(x = weight.reduction)) {
+      if (ii == 1 & is.null(x = weight.reduction[[ii]])) next
+      if (!inherits(x = weight.reduction[[ii]], what = "DimReduc")) {
+        if (!weight.reduction[[ii]] %in% available.reductions[[ii]]) {
+          stop("Requested dimension reduction (", weight.reduction[[ii]], ") is not present in object ", ii)
+        }
+        weight.reduction[[ii]] <- object.list[[ii]][[weight.reduction[[ii]]]]
+      }
+    }
+  }
+  if (is.null(x = sample.tree)) {
+    sample.tree <- SampleTree.STACAS(
+      anchorset = anchors,
+      hclust.method = "average",
+      plot = FALSE
+    )
+  }
+  cellnames.list <- list()
+  for (ii in 1:length(x = object.list)) {
+    cellnames.list[[ii]] <- colnames(x = object.list[[ii]])
+  }
+  unintegrated <- suppressWarnings(expr = merge(
+    x = object.list[[reference.objects[[1]]]],
+    y = object.list[reference.objects[2:length(x = reference.objects)]]
+  ))
+  names(x = object.list) <- as.character(-(1:length(x = object.list)))
+  if (!is.null(x = weight.reduction)) {
+    names(x = weight.reduction) <- names(x = object.list)
+  }
+  if (verbose & (length(x = reference.objects) != length(x = object.list))) {
+    message("Building integrated reference")
+  }
+  for (ii in 1:nrow(x = sample.tree)) {
+    merge.pair <- as.character(x = sample.tree[ii, ])
+    length1 <- ncol(x = object.list[[merge.pair[1]]])
+    length2 <- ncol(x = object.list[[merge.pair[2]]])
+    if (!(preserve.order) & (length2 > length1)) {
+      merge.pair <- rev(x = merge.pair)
+      sample.tree[ii, ] <- as.numeric(merge.pair)
+    }
+    if (!is.null(x = weight.reduction)) {
+      # extract the correct dimreduc objects, in the correct order
+      weight.pair <- weight.reduction[merge.pair]
+    } else {
+      weight.pair <- NULL
+    }
+    object.1 <- DietSeurat(
+      object = object.list[[merge.pair[1]]],
+      assays = DefaultAssay(object =  object.list[[merge.pair[1]]]),
+      counts = FALSE
+    )
+    object.2 <- DietSeurat(
+      object = object.list[[merge.pair[2]]],
+      assays = DefaultAssay(object =  object.list[[merge.pair[2]]]),
+      counts = FALSE
+    )
+    # suppress key duplication warning
+    suppressWarnings(object.1[["ToIntegrate"]] <- object.1[[DefaultAssay(object = object.1)]])
+    DefaultAssay(object = object.1) <- "ToIntegrate"
+    object.1 <- DietSeurat(object = object.1, assays = "ToIntegrate")
+    suppressWarnings(object.2[["ToIntegrate"]] <- object.2[[DefaultAssay(object = object.2)]])
+    DefaultAssay(object = object.2) <- "ToIntegrate"
+    object.2 <- DietSeurat(object = object.2, assays = "ToIntegrate")
+    datasets <- ParseMergePair.local(sample.tree, ii)
+    if (verbose) {
+      message(
+        "Merging dataset ",
+        paste(datasets$object2, collapse = " "),
+        " into ",
+        paste(datasets$object1, collapse = " ")
+      )
+    }
+    merged.obj <- merge(x = object.1, y = object.2, merge.data = TRUE)
+    if (verbose) {
+      message("Extracting anchors for merged samples")
+    }
+    filtered.anchors <- anchors[anchors$dataset1 %in% datasets$object1 & anchors$dataset2 %in% datasets$object2, ]
+    
+    #Disables local rescaling of anchor weights
+    if (k.weight == "max") {
+      k.use <- length(unique(filtered.anchors$cell2))
+    } else {
+      k.use <- k.weight
+    }
+    
+    integrated.matrix <- Seurat:::RunIntegration(
+      filtered.anchors = filtered.anchors,
+      normalization.method = normalization.method,
+      reference = object.1,
+      query = object.2,
+      cellnames.list = cellnames.list,
+      new.assay.name = new.assay.name,
+      features.to.integrate = features.to.integrate,
+      features = features,
+      dims = dims,
+      weight.reduction = weight.reduction,
+      k.weight = k.use,
+      sd.weight = sd.weight,
+      eps=0,
+      verbose = verbose
+    )
+    integrated.matrix <- cbind(integrated.matrix, GetAssayData(object = object.1, slot = 'data')[features.to.integrate, ])
+
+    merged.obj[[new.assay.name]] <- CreateAssayObject(data = integrated.matrix)
+    DefaultAssay(object = merged.obj) <- new.assay.name
+    object.list[[as.character(x = ii)]] <- merged.obj
+    object.list[[merge.pair[[1]]]] <- NULL
+    object.list[[merge.pair[[2]]]] <- NULL
+    invisible(x = CheckGC())
+  }
+  integrated.data <- GetAssayData(
+    object = object.list[[as.character(x = ii)]],
+    assay = new.assay.name,
+    slot = 'data'
+  )
+  integrated.data <- integrated.data[, colnames(x = unintegrated)]
+  new.assay <- new(
+    Class = 'Assay',
+    counts =  new(Class = "dgCMatrix"),
+    data = integrated.data,
+    scale.data = matrix(),
+    var.features = vector(),
+    meta.features = data.frame(row.names = rownames(x = integrated.data)),
+    misc = NULL
+  )
+  unintegrated[[new.assay.name]] <- new.assay
+  # "unintegrated" now contains the integrated assay
+  DefaultAssay(object = unintegrated) <- new.assay.name
+  VariableFeatures(object = unintegrated) <- features
+  if (normalization.method == "SCT"){
+    unintegrated[[new.assay.name]] <- SetAssayData(
+      object = unintegrated[[new.assay.name]],
+      slot = "scale.data",
+      new.data = as.matrix(x = GetAssayData(object = unintegrated[[new.assay.name]], slot = "data"))
+    )
+  }
+  unintegrated <- SetIntegrationData(
+    object = unintegrated,
+    integration.name = "Integration",
+    slot = "anchors",
+    new.data = anchors
+  )
+  unintegrated <- SetIntegrationData(
+    object = unintegrated,
+    integration.name = "Integration",
+    slot = "sample.tree",
+    new.data = sample.tree
+  )
+  unintegrated[["FindIntegrationAnchors"]] <- slot(object = anchorset, name = "command")
+  suppressWarnings(expr = unintegrated <- LogSeuratCommand(object = unintegrated))
+  return(unintegrated)
 }

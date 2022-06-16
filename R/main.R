@@ -43,8 +43,6 @@ FindAnchors.STACAS <- function (
   verbose = FALSE
 ) {
   
-  scale = FALSE
-  reduction = "rpca"
   normalization.method <- match.arg(arg = normalization.method)
   
   #default assay, or user-defined assay
@@ -99,11 +97,11 @@ FindAnchors.STACAS <- function (
   if (is.null(reference)) {
     ref.anchors <- FindIntegrationAnchors.wdist(object.list, dims = dims, k.anchor = k.anchor, anchor.features=anchor.features,
                                                 normalization.method = normalization.method,
-                                                scale=scale, reduction=reduction, assay=assay, k.score=k.score, verbose=verbose)
+                                                assay=assay, k.score=k.score, verbose=verbose)
   } else {
     ref.anchors <- FindIntegrationAnchors.wdist(object.list, reference=reference, dims = dims, k.anchor = k.anchor, anchor.features=anchor.features,
                                                 normalization.method = normalization.method,
-                                                scale=scale, reduction=reduction, assay=assay, k.score=k.score, verbose=verbose)
+                                                assay=assay, k.score=k.score, verbose=verbose)
   }
   
   #average reciprocal distances
@@ -178,11 +176,11 @@ FilterAnchors.STACAS <- function(ref.anchors,
 #'
 #' Build an integration tree by clustering samples in a hierarchical manner. Cumulative scoring among anchor pairs will be used as pairwise similarity criteria of samples.
 #' 
-#' @param anchorset scored anchors  obtained from \code{scoring_anchors} STACAS function
-#' @param hclust.method custering method to be used (complete, average, single, ward, etc) 
-#' @param usecol colum name to be used to compute sample similarity. Default "score"
-#' @param dist.hard.thr distance threshold used to mimic original STACAS behaviour
-#' @param method agregation method to be used among anchors for sample similarity computation. Default: cum.sum
+#' @param anchorset scored anchors  obtained from \code{FindAnchors.STACAS} and \code{FilterAnchors.STACAS} function
+#' @param hclust.method clustering method to be used (complete, average, single, ward) 
+#' @param usecol column name to be used to compute sample similarity. Default "score"
+#' @param dist.hard.thr distance threshold used to mimic original STACAS behavior
+#' @param method aggregation method to be used among anchors for sample similarity computation. Default: weight.sum
 #' @param plot logical indicating if dendrogram must be ploted
 
 #' @return A n integration tree to be passed to the integration function.
@@ -226,8 +224,6 @@ SampleTree.STACAS <- function (
     rownames(similarity.matrix) <- obj.names
     colnames(similarity.matrix) <- obj.names
   }
-  #minor change: use 1- simil instead of 1/simil
-  #distance.matrix <- as.dist(m = 1 / similarity.matrix)
   distance.matrix <- as.dist(m = 1 - similarity.matrix)
   
   if(plot){
@@ -246,15 +242,16 @@ SampleTree.STACAS <- function (
   for (r in 1:nrow(sample.tree)) {
     pair <- sample.tree[r, ]
     
-    length1 <- nanch[[as.character(pair[1])]]
-    length2 <- nanch[[as.character(pair[2])]]
+    w1 <- nanch[[as.character(pair[1])]]
+    w2 <- nanch[[as.character(pair[2])]]
 
-    if (length2 > length1) {
+    if (w2 > w1) {
       pair <- rev(pair)
       sample.tree[r, ] <- pair
     }
     
-    nanch[[as.character(r)]] <- length1 + length2  #cumulative (weighted) # of anchors
+ #   nanch[[as.character(r)]] <- w1 + w2  #cumulative (weighted) # of anchors
+    nanch[[as.character(r)]] <- max(w1,w2)  #keep weight of more connected of the pair 
   }
   return(sample.tree)
 }
@@ -320,45 +317,226 @@ PlotAnchors.STACAS <- function(
   return(pll)
 }
 
+#' IntegrateData.STACAS
+#'
+#' Integrate a list of datasets using STACAS anchors
+#'
+#' @param anchorset A set of anchors calculated using \code{FindAnchors.STACAS} and filtered using \code{FilterAnchors.STACAS}
+#' @param new.assay.name Assay to store the integrated data
+#' @param normalization.method How was the data normalized?
+#' @param features.to.integrate Which genes to include in the corrected integrated space (def. variable genes)
+#' @param dims Number of dimensions for local anchor weighting
+#' @param k.weight Number of neighbors for local anchor weighting. Set \code{k.weight="max"} to disable local weighting
+#' @param sample.tree Specify the order of integration. See \code{SampleTree.STACAS} to calculate an integration tree.
+#' @param preserve.order Do not reorder objects based on size for each pairwise integration.
+#' @param verbose Print progress bar and output
+#' @return A plot of the distribution of rPCA distances
+#' @export
+#' 
 
-#Wrapper to be updated
-
-Run.STACAS <- function (
-    object.list = NULL,
-    assay = NULL,
-    reference = NULL,
-    anchor.features = 500,
-    dims = 1:10,
+IntegrateData.STACAS <- function(
+    anchorset,
+    new.assay.name = "integrated",
     normalization.method = c("LogNormalize", "SCT"),
-    dist.pct = 0.8,
-    k.anchor = 5,
-    k.score = 30,
-    plot.file = "anchor.dist.mean.pairwise.png",
+    features.to.integrate = NULL,
+    dims = 1:30,
+    k.weight = 100,
+    sample.tree = NULL,
+    preserve.order = FALSE,
     verbose = TRUE
 ) {
+  if (!is.null(sample.tree)) {
+    preserve.order = TRUE  #keep tree intact
+  }
   normalization.method <- match.arg(arg = normalization.method)
+  reference.datasets <- slot(object = anchorset, name = 'reference.objects')
+  object.list <- slot(object = anchorset, name = 'object.list')
+  anchors <- slot(object = anchorset, name = 'anchors')
+  ref <- object.list[reference.datasets]
+  features <- slot(object = anchorset, name = "anchor.features")
+  unintegrated <- suppressWarnings(expr = merge(
+    x = object.list[[1]],
+    y = object.list[2:length(x = object.list)]
+  ))
+  if (!is.null(x = features.to.integrate)) {
+    features.to.integrate <- intersect(
+      x = features.to.integrate,
+      y = Reduce(
+        f = intersect,
+        x = lapply(
+          X = object.list,
+          FUN = rownames
+        )
+      )
+    )
+  }
+  if (normalization.method == "SCT") {
+    model.list <- list()
+    for (i in 1:length(x = object.list)) {
+      assay <- DefaultAssay(object = object.list[[i]])
+      if (length(x = setdiff(x = features.to.integrate, y = features)) != 0) {
+        object.list[[i]] <- GetResidual(
+          object = object.list[[i]],
+          features = setdiff(x = features.to.integrate, y = features),
+          verbose = verbose
+        )
+      }
+      model.list[[i]] <- slot(object = object.list[[i]][[assay]], name = "SCTModel.list")
+      object.list[[i]][[assay]] <- suppressWarnings(expr = CreateSCTAssayObject(
+        data = GetAssayData(
+          object = object.list[[i]],
+          assay = assay,
+          slot = "scale.data")
+      )
+      )
+    }
+    model.list <- unlist(x = model.list)
+    slot(object = anchorset, name = "object.list") <- object.list
+  }
+  # perform pairwise integration of reference objects
+  reference.integrated <- PairwiseIntegrateReference.STACAS(
+    anchorset = anchorset,
+    new.assay.name = new.assay.name,
+    normalization.method = normalization.method,
+    features = features,
+    features.to.integrate = features.to.integrate,
+    dims = dims,
+    k.weight = k.weight,
+    sample.tree = sample.tree,
+    preserve.order = preserve.order,
+    verbose = verbose
+  )
   
-  ref.anchors <- FindAnchors.STACAS(object.list, dims=dims, k.anchor=k.anchor, k.score=k.score, assay=assay,
-                                    normalization.method = normalization.method,
-                                    reference=reference, anchor.features=anchor.features, verbose=verbose)
-  
-  if (is.null(names(object.list))) {
-    names <- 1:length(object.list)
-  } else {
-    names <- names(object.list)
+  # set SCT model
+  if (normalization.method == "SCT") {
+    if (is.null(x = Tool(object = reference.integrated, slot = "Integration"))) {
+      reference.sample <- slot(object = anchorset, name = "reference.objects")
+    } else {
+      reference.sample <- SampleIntegrationOrder(
+        tree = slot(
+          object = reference.integrated,
+          name = "tools"
+        )$Integration@sample.tree
+      )[1]
+    }
+    reference.cells <- Cells(x = object.list[[reference.sample]])
+    reference.model <- NULL
+    if (length(x = model.list) > 0) {
+      reference.model <- sapply(X = model.list, FUN = function(model) {
+        reference.check <- FALSE
+        model.cells <- Cells(x = model)
+        if (length(x = model.cells) > 0 &
+            length(x = setdiff(x = model.cells, y = reference.cells)) == 0) {
+          reference.check <- TRUE
+        }
+        return(reference.check)
+      }
+      )
+      reference.model <- model.list[[which(reference.model)]]
+    }
   }
   
-  plots <- PlotAnchors.STACAS(ref.anchors, obj.names=names,  dist.pct = dist.pct)
-  
-  g.cols <- 3
-  g.rows <- as.integer((length(plots)+2)/g.cols)
-  g <- do.call("arrangeGrob", c(plots, ncol=g.cols, nrow=g.rows))
-  ggsave(plot.file, plot=g, width = 6*g.cols, height = 6*g.rows)
-  
-  plot.new()
-  grid.draw(g)
-  
-  ref.anchors.filtered <- FilterAnchors.STACAS(ref.anchors,  dist.pct = dist.pct)
-  
-  return(ref.anchors.filtered)
+  if (length(x = reference.datasets) == length(x = object.list)) {
+    if (normalization.method == "SCT") {
+      reference.integrated[[new.assay.name]] <- CreateSCTAssayObject(
+        data = GetAssayData(object = reference.integrated, assay = new.assay.name, slot = "data"),
+        scale.data = ScaleData(
+          object = GetAssayData(object = reference.integrated, assay = new.assay.name, slot = "scale.data"),
+          do.scale = FALSE,
+          do.center = TRUE,
+          verbose = FALSE),
+        SCTModel.list = reference.model
+      )
+      levels(x =  reference.integrated[[new.assay.name]]) <- "refmodel"
+      reference.integrated[[assay]] <- unintegrated[[assay]]
+    }
+    DefaultAssay(object = reference.integrated) <- new.assay.name
+    VariableFeatures(object = reference.integrated) <- features
+    reference.integrated[["FindIntegrationAnchors"]] <- slot(object = anchorset, name = "command")
+    reference.integrated <- suppressWarnings(LogSeuratCommand(object = reference.integrated))
+    return(reference.integrated)
+  } else {
+    active.assay <- DefaultAssay(object = ref[[1]])
+    reference.integrated[[active.assay]] <- NULL
+    # TODO: restore once check.matrix is in SeuratObject
+    # reference.integrated[[active.assay]] <- CreateAssayObject(
+    #   data = GetAssayData(
+    #     object = reference.integrated[[new.assay.name]],
+    #     slot = 'data'
+    #   ),
+    #   check.matrix = FALSE
+    # )
+    reference.integrated[[active.assay]] <- CreateAssayObject(
+      data = GetAssayData(
+        object = reference.integrated[[new.assay.name]],
+        slot = 'data'
+      )
+    )
+    DefaultAssay(object = reference.integrated) <- active.assay
+    reference.integrated[[new.assay.name]] <- NULL
+    VariableFeatures(object = reference.integrated) <- features
+    # Extract the query objects (if any) and map to reference
+    integrated.data <- MapQueryData(
+      anchorset = anchorset,
+      reference = reference.integrated,
+      new.assay.name = new.assay.name,
+      normalization.method = normalization.method,
+      features = features,
+      features.to.integrate = features.to.integrate,
+      dims = dims,
+      k.weight = k.weight,
+      weight.reduction = weight.reduction,
+      sd.weight = sd.weight,
+      preserve.order = preserve.order,
+      eps = eps,
+      verbose = verbose
+    )
+    
+    # Construct final assay object
+    # TODO: restore once check.matrix is in SeuratObject
+    # integrated.assay <- CreateAssayObject(
+    #   data = integrated.data,
+    #   check.matrix = FALSE
+    # )
+    integrated.assay <- CreateAssayObject(
+      data = integrated.data
+    )
+    if (normalization.method == "SCT") {
+      integrated.assay <- CreateSCTAssayObject(
+        data =  integrated.data,
+        scale.data = ScaleData(
+          object = integrated.data,
+          do.scale = FALSE,
+          do.center = TRUE,
+          verbose = FALSE),
+        SCTModel.list = reference.model
+      )
+      levels(x = integrated.assay) <- "refmodel"
+    }
+    unintegrated[[new.assay.name]] <- integrated.assay
+    unintegrated <- SetIntegrationData(
+      object = unintegrated,
+      integration.name = "Integration",
+      slot = "anchors",
+      new.data = anchors
+    )
+    if (!is.null(x = Tool(object = reference.integrated, slot = "Integration"))) {
+      sample.tree <- GetIntegrationData(
+        object = reference.integrated,
+        integration.name = "Integration",
+        slot = "sample.tree"
+      )
+    }
+    unintegrated <- SetIntegrationData(
+      object = unintegrated,
+      integration.name = "Integration",
+      slot = "sample.tree",
+      new.data = sample.tree
+    )
+    DefaultAssay(object = unintegrated) <- new.assay.name
+    VariableFeatures(object = unintegrated) <- features
+    unintegrated[["FindIntegrationAnchors"]] <- slot(object = anchorset, name = "command")
+    unintegrated <- suppressWarnings(LogSeuratCommand(object = unintegrated))
+    return(unintegrated)
+  }
 }

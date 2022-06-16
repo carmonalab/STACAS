@@ -2,6 +2,7 @@
 
 export(FilterAnchors.STACAS)
 export(FindAnchors.STACAS)
+export(IntegrateData.STACAS)
 export(PlotAnchors.STACAS)
 export(SampleTree.STACAS)
 import(Seurat)

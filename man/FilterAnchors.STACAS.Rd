@@ -6,7 +6,7 @@
 \usage{
 FilterAnchors.STACAS(
   ref.anchors,
-  alpha = 0.5,
+  alpha = 0.8,
   dist.pct = 0.5,
   dist.scale.factor = 2,
   semi_supervised = FALSE,
