@@ -89,7 +89,7 @@ FindAnchors.STACAS <- function (
   message("Preparing PCA embeddings for objects...")
   for (i in 1:length(object.list)) {
     object.list[[i]] <- ScaleData(object.list[[i]], assay=assay[i], model.use="linear", do.center=FALSE, do.scale=FALSE,
-                                  features = row.names(object.list[[i]]), verbose=FALSE)
+                                  features = anchor.features, verbose=FALSE)
     cat(paste0(" ",i,"/",length(object.list)))
     object.list[[i]] <- RunPCA(object.list[[i]], features = anchor.features, ndims.print = NA, nfeatures.print = NA, verbose=FALSE)
   }
@@ -135,7 +135,7 @@ FindAnchors.STACAS <- function (
 #' 
 
 FilterAnchors.STACAS <- function(ref.anchors,
-                                 alpha = 0.5,
+                                 alpha = 0.8,
                                  dist.pct = 0.5,
                                  dist.scale.factor = 2,
                                  semi_supervised = FALSE,
