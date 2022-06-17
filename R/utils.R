@@ -1140,9 +1140,11 @@ PairwiseIntegrateReference.STACAS <- function(
     }
     filtered.anchors <- anchors[anchors$dataset1 %in% datasets$object1 & anchors$dataset2 %in% datasets$object2, ]
     
-    #Disables local rescaling of anchor weights
-    if (k.weight == "max") {
-      k.use <- length(unique(filtered.anchors$cell2))
+    #k.weight == "max" disables local rescaling of anchor weights
+    
+    nanch.d2 <- length(unique(filtered.anchors$cell2))
+    if (k.weight == "max" | k.weight > nanch.d2) {
+      k.use <- nanch.d2
     } else {
       k.use <- k.weight
     }
