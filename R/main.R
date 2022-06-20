@@ -19,9 +19,14 @@
 #' @param normalization.method Which normalization method was used to prepare the data - either LogNormalize (default) or SCT
 #' @param k.anchor The number of neighbors to use for identifying anchors
 #' @param k.score The number of neighbors to use for scoring anchors
+#' @param alpha Weight on rPCA distance for rescoring (between 0 and 1).
+#' @param dist.pct Center of logistic function, based on quantile value of rPCA distance distribution
+#' @param dist.scale.factor Scale factor for logistic function (multiplied by SD of rPCA distance distribution)
 #' @param cell.labels A metadata column name, storing cell type annotations. These will be taken into account
 #' for semi-supervised alignment (optional). Cells annotated as NA or NULL will not be penalized in semi-supervised
 #' alignment
+#' @param label.confidence How much you trust the provided cell labels (from 0 to 1).
+#' @param seed Random seed for probabilistic anchor acceptance
 #' @param verbose Print all output
 #' 
 #' @return Returns an AnchorSet object, which can be directly applied to Seurat integration using
@@ -39,11 +44,26 @@ FindAnchors.STACAS <- function (
   normalization.method = c("LogNormalize", "SCT"),
   k.anchor = 5,
   k.score = 30,
+  alpha = 0.8,
+  dist.pct = 0.5,
+  dist.scale.factor = 2,
   cell.labels = NULL,
+  label.confidence = 1,
+  seed = 123,
   verbose = FALSE
 ) {
   
   normalization.method <- match.arg(arg = normalization.method)
+  
+  if (label.confidence<0 | label.confidence>1) {
+    stop("label.confidence must be a number between 0 and 1")
+  }
+  if (alpha<0 | alpha>1) {
+    stop("alpha must be a number between 0 and 1")
+  }
+  if (dist.pct<0 | dist.pct>1) {
+    stop("dist.pct must be a number between 0 and 1")
+  }
   
   #default assay, or user-defined assay
   if (!is.null(assay)) {
@@ -91,7 +111,7 @@ FindAnchors.STACAS <- function (
     cat(paste0(" ",i,"/",length(object.list)))
     object.list[[i]] <- RunPCA(object.list[[i]], features = anchor.features, ndims.print = NA, nfeatures.print = NA, verbose=FALSE)
   }
-  cat("\n")
+  cat("\nFinding integration anchors...\n")
   
   #Find pairwise anchors and keep distance information
   if (is.null(reference)) {
@@ -104,86 +124,36 @@ FindAnchors.STACAS <- function (
                                                 assay=assay, k.score=k.score, verbose=verbose)
   }
   
+  #store Seurat knn consistency score
+  ref.anchors@anchors['knn.score'] <- ref.anchors@anchors['score']
   #average reciprocal distances
   mat <- ref.anchors@anchors[,c("dist1.2","dist2.1")]
   ref.anchors@anchors['dist.mean'] <- apply(mat, 1, mean)
   
+  ref.anchors <- reweight_anchors(ref.anchors, alpha=alpha,
+                                  dist.pct=dist.pct,
+                                  dist.scale.factor=dist.scale.factor)
   if (!is.null(cell.labels)) {
-     ref.anchors <- inconsistent_anchors(ref.anchors, cell.labels)
+     ref.anchors <- inconsistent_anchors(ref.anchors, cell.labels, seed=seed,
+                                         label.confidence=label.confidence,
+                                         quantile_ss=0)
   }
   
   return(ref.anchors)
 }
-
-#' FilterAnchors.STACAS
-#'
-#' Re-weighs and filters integration anchors based on pairwise rPCA distance and consistency in cell annotation.
-#' These are calculated using \code{FindAnchors.STACAS}.
-#'
-#' @param ref.anchors A set of anchors calculated using \code{FindAnchors.STACAS}, containing the pairwise distances between anchors.
-#' @param alpha Weight on rPCA distance for rescoring (between 0 and 1).
-#' @param dist.pct Center of logistic function, based on quantile value of rPCA distance distribution
-#' @param dist.scale.factor Scale factor for logistic function (multiplied by SD of rPCA distance distribution)
-#' @param semi_supervised Use consistency between cell type labels to remove anchors.
-#' @param accept_rate_ss Probability of accepting inconsistent anchors with score above \code{quantile_ss} 
-#' @param quantile_ss Distribution quantile on anchor scores to determine which inconsistent anchors to retain
-
-#' @return A new anchor object with reweighted anchors scores, and optionally filtered by consistency of cell type annotation
-#' @export
-#' 
-
-FilterAnchors.STACAS <- function(ref.anchors,
-                                 alpha = 0.8,
-                                 dist.pct = 0.5,
-                                 dist.scale.factor = 2,
-                                 semi_supervised = FALSE,
-                                 accept_rate_ss = 0.5,
-                                 quantile_ss = 0.8)
-{
-  df <- ref.anchors@anchors
-  knn_score <- df$score
-  epsilon <- 10^(-10)
-  
-  dist.mean.center = quantile(df$dist.mean,dist.pct)
-  dist.mean.scale = sd(df$dist.mean,na.rm = T)/dist.scale.factor
-
-  squash <- logistic(x = df$dist.mean, invert = T, 
-                     center = dist.mean.center, 
-                     scale = dist.mean.scale)
-  df$score <-  alpha*squash + (1-alpha)*knn_score
-  
-  df$score[df$score < epsilon ] <- epsilon 
- 
-  if (semi_supervised) {
-    if ("flag" %in% colnames(df)) {
-      
-       #Apply Boltzmann-based rejection based on deterministic label agreement
-       if (quantile_ss < 1) {
-         df <- boltzmann_based_rejection(anchors=df, accept_rate = accept_rate_ss, q = quantile_ss)
-       }
-       df <- df[df$flag==TRUE,]
-    } else {
-       warning("Cannot find 'flag' column in anchor object. Did you run FindAnchors.STACAS with cell.labels?
-               Skipping semi-supervised alignment.")
-    }
-  }
-  ref.anchors@anchors <- df
-  return(ref.anchors)
-}
-
 
 #' Integration tree generation 
 #'
 #' Build an integration tree by clustering samples in a hierarchical manner. Cumulative scoring among anchor pairs will be used as pairwise similarity criteria of samples.
 #' 
-#' @param anchorset scored anchors  obtained from \code{FindAnchors.STACAS} and \code{FilterAnchors.STACAS} function
-#' @param hclust.method clustering method to be used (complete, average, single, ward) 
-#' @param usecol column name to be used to compute sample similarity. Default "score"
-#' @param dist.hard.thr distance threshold used to mimic original STACAS behavior
-#' @param method aggregation method to be used among anchors for sample similarity computation. Default: weight.sum
-#' @param plot logical indicating if dendrogram must be ploted
-
-#' @return A n integration tree to be passed to the integration function.
+#' @param anchorset Scored anchorsobtained from \code{FindAnchors.STACAS} and \code{FilterAnchors.STACAS} function
+#' @param hclust.method Clustering method to be used (complete, average, single, ward) 
+#' @param usecol Column name to be used to compute sample similarity. Default "score"
+#' @param dist.hard.thr Distance threshold used to mimic original STACAS behavior
+#' @param method Aggregation method to be used among anchors for sample similarity computation. Default: weight.sum
+#' @param semisupervised Whether to use cell type label information (if available)
+#' @param plot Logical indicating if dendrogram must be plotted
+#' @return An integration tree to be passed to the integration function.
 #' @export
 
 SampleTree.STACAS <- function (
@@ -192,11 +162,16 @@ SampleTree.STACAS <- function (
     hclust.method = c("average","single","complete"),
     usecol = "score",
     method = c("weight.sum","counts"),
+    semisupervised = TRUE,
     plot = TRUE
 ) {
   
   hclust.method <- hclust.method[1]
   method <- method[1]
+  
+  if (semisupervised & "Retain_ss" %in% colnames(anchorset@anchors)) {
+    anchorset@anchors <- anchorset@anchors[anchorset@anchors$Retain_ss==TRUE,]
+  }
   
   object.list <- slot(object = anchorset, name = "object.list")
   reference.objects <- slot(object = anchorset, name = "reference.objects")
@@ -328,6 +303,7 @@ PlotAnchors.STACAS <- function(
 #' @param dims Number of dimensions for local anchor weighting
 #' @param k.weight Number of neighbors for local anchor weighting. Set \code{k.weight="max"} to disable local weighting
 #' @param sample.tree Specify the order of integration. See \code{SampleTree.STACAS} to calculate an integration tree.
+#' @param semisupervised Whether to use cell type label information (if available)
 #' @param preserve.order Do not reorder objects based on size for each pairwise integration.
 #' @param verbose Print progress bar and output
 #' @return A plot of the distribution of rPCA distances
@@ -342,6 +318,7 @@ IntegrateData.STACAS <- function(
     dims = 1:30,
     k.weight = 100,
     sample.tree = NULL,
+    semisupervised = TRUE,
     preserve.order = FALSE,
     verbose = TRUE
 ) {
@@ -350,6 +327,11 @@ IntegrateData.STACAS <- function(
   }
   normalization.method <- match.arg(arg = normalization.method)
   reference.datasets <- slot(object = anchorset, name = 'reference.objects')
+  
+  if (semisupervised & "Retain_ss" %in% colnames(anchorset@anchors)) {
+    anchorset@anchors <- anchorset@anchors[anchorset@anchors$Retain_ss==TRUE,]
+  }
+  
   object.list <- slot(object = anchorset, name = 'object.list')
   anchors <- slot(object = anchorset, name = 'anchors')
   ref <- object.list[reference.datasets]

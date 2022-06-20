@@ -13,7 +13,12 @@ FindAnchors.STACAS(
   normalization.method = c("LogNormalize", "SCT"),
   k.anchor = 5,
   k.score = 30,
+  alpha = 0.8,
+  dist.pct = 0.5,
+  dist.scale.factor = 2,
   cell.labels = NULL,
+  label.confidence = 1,
+  seed = 123,
   verbose = FALSE
 )
 }
@@ -40,9 +45,19 @@ If NULL (default), all pairwise anchors are found.}
 
 \item{k.score}{The number of neighbors to use for scoring anchors}
 
+\item{alpha}{Weight on rPCA distance for rescoring (between 0 and 1).}
+
+\item{dist.pct}{Center of logistic function, based on quantile value of rPCA distance distribution}
+
+\item{dist.scale.factor}{Scale factor for logistic function (multiplied by SD of rPCA distance distribution)}
+
 \item{cell.labels}{A metadata column name, storing cell type annotations. These will be taken into account
 for semi-supervised alignment (optional). Cells annotated as NA or NULL will not be penalized in semi-supervised
 alignment}
+
+\item{label.confidence}{How much you trust the provided cell labels (from 0 to 1).}
+
+\item{seed}{Random seed for probabilistic anchor acceptance}
 
 \item{verbose}{Print all output}
 }

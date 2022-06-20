@@ -12,6 +12,7 @@ IntegrateData.STACAS(
   dims = 1:30,
   k.weight = 100,
   sample.tree = NULL,
+  semisupervised = TRUE,
   preserve.order = FALSE,
   verbose = TRUE
 )
@@ -30,6 +31,8 @@ IntegrateData.STACAS(
 \item{k.weight}{Number of neighbors for local anchor weighting. Set \code{k.weight="max"} to disable local weighting}
 
 \item{sample.tree}{Specify the order of integration. See \code{SampleTree.STACAS} to calculate an integration tree.}
+
+\item{semisupervised}{Whether to use cell type label information (if available)}
 
 \item{preserve.order}{Do not reorder objects based on size for each pairwise integration.}
 

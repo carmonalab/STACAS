@@ -10,24 +10,27 @@ SampleTree.STACAS(
   hclust.method = c("average", "single", "complete"),
   usecol = "score",
   method = c("weight.sum", "counts"),
+  semisupervised = TRUE,
   plot = TRUE
 )
 }
 \arguments{
-\item{anchorset}{scored anchors  obtained from \code{FindAnchors.STACAS} and \code{FilterAnchors.STACAS} function}
+\item{anchorset}{Scored anchorsobtained from \code{FindAnchors.STACAS} and \code{FilterAnchors.STACAS} function}
 
-\item{hclust.method}{clustering method to be used (complete, average, single, ward)}
+\item{hclust.method}{Clustering method to be used (complete, average, single, ward)}
 
-\item{usecol}{column name to be used to compute sample similarity. Default "score"}
+\item{usecol}{Column name to be used to compute sample similarity. Default "score"}
 
-\item{method}{aggregation method to be used among anchors for sample similarity computation. Default: weight.sum}
+\item{method}{Aggregation method to be used among anchors for sample similarity computation. Default: weight.sum}
 
-\item{plot}{logical indicating if dendrogram must be ploted}
+\item{semisupervised}{Whether to use cell type label information (if available)}
 
-\item{dist.hard.thr}{distance threshold used to mimic original STACAS behavior}
+\item{plot}{Logical indicating if dendrogram must be plotted}
+
+\item{dist.hard.thr}{Distance threshold used to mimic original STACAS behavior}
 }
 \value{
-A n integration tree to be passed to the integration function.
+An integration tree to be passed to the integration function.
 }
 \description{
 Build an integration tree by clustering samples in a hierarchical manner. Cumulative scoring among anchor pairs will be used as pairwise similarity criteria of samples.

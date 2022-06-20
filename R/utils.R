@@ -9,8 +9,10 @@ logistic <- function(x,scale = NULL, center = NULL, invert = F){
 
 # Mark anchor as inconsistent based on cell-type labeling 
 # Anchors will be consider as inconsistent if they are linking cells classified as different cell populations. 
-inconsistent_anchors <- function(anchors,
-                                 cell.labels=NULL){
+inconsistent_anchors <- function(anchors, seed=123,
+                                 cell.labels=NULL,
+                                 label.confidence=1,
+                                 quantile_ss=0){
   
   if (! cell.labels %in% colnames(anchors@object.list[[1]]@meta.data)) {
     stop(sprintf("Please specify a valid metadata column with label annotations (cell.labels). %s not found", cell.labels))
@@ -38,32 +40,80 @@ inconsistent_anchors <- function(anchors,
   df[,"Label_2"] <- labels[order2, "label"]
   
   #Flag consistency of labels
-  match_ok <- df$Label_1 == df$Label_2 | df$Label_1 == "unknown" | df$Label_2 == "unknown"
+  df$Consistent <- df$Label_1 == df$Label_2 | df$Label_1 == "unknown" | df$Label_2 == "unknown"
   
-  df$flag <- match_ok
-  
+  #Rescue some anchors with a given probability
+
+  df <- probabilistic_reject(anchors=df, accept_rate = 1-label.confidence,
+                                    q = quantile_ss, seed = seed)
   anchors@anchors <- df
   return(anchors)
+}
+
+#Re-weight anchors based on combined seurat anchor score and rPCA distance
+reweight_anchors <- function(ref.anchors,
+                                 alpha = 0.8,
+                                 dist.pct = 0.5,
+                                 dist.scale.factor = 2)
+{
+  df <- ref.anchors@anchors
+  epsilon <- 10^(-10)
+  
+  dist.mean.center = quantile(df$dist.mean,dist.pct)
+  dist.mean.scale = sd(df$dist.mean,na.rm = T)/dist.scale.factor
+  
+  squash <- logistic(x = df$dist.mean, invert = T, 
+                     center = dist.mean.center, 
+                     scale = dist.mean.scale)
+  df$score <-  alpha*squash + (1-alpha)*df$knn.score
+  
+  df$score[df$score < epsilon ] <- epsilon 
+  
+  ref.anchors@anchors <- df
+  return(ref.anchors)
 }
 
 # Boltzmann-based rejection of inconsistent anchors
 # q: quantile score of non-inconsistent anchors
 # accept_rate: probability of accepting anchors above the quantile score
 
-boltzmann_based_rejection <- function(anchors, accept_rate = 0.5, q = 0.5){
+boltzmann_based_rejection <- function(anchors, accept_rate = 0.5, q = 1){
   
-  e0 <- quantile(anchors$score, q)                  #scale is given by 'q' quantile score
-  DE <- anchors[anchors$flag==FALSE, "score"] - e0   #DE is given by the actual score of inconsistent anchors.   
-  kT <- quantile(DE[DE>0],1-accept_rate)
-  rejection_prob <- vapply(exp(-DE/kT), function(x){min(1,x)}, numeric(1))
+  if (q<1) {
+    e0 <- quantile(anchors$score, q)                  #scale is given by 'q' quantile score
+    DE <- anchors[anchors$Consistent==FALSE, "score"] - e0   #DE is given by the actual score of inconsistent anchors.   
+    kT <- quantile(DE[DE>0],1-accept_rate)
+    rejection_prob <- vapply(exp(-DE/kT), function(x){min(1,x)}, numeric(1))
+    
+    accept <- rejection_prob**(accept_rate) < runif(length(DE), 0, 1)
+    
+    #Add this column
+    flag_bz <- anchors$Consistent
+    flag_bz[anchors$Consistent==FALSE] <- accept
+  } else {
+    flag_bz <- anchors$Consistent
+  }
   
-  accept <- rejection_prob**(accept_rate) < runif(length(DE), 0, 1)
+  anchors['Retain_ss'] <- flag_bz
+  return(anchors)
+}
+
+probabilistic_reject <- function(anchors, accept_rate=0, q=0, seed=123){
   
+  set.seed(seed)
+  
+  e0 <- quantile(anchors$score, q)
+  pos <- anchors[anchors$Consistent==FALSE, "score"] - e0
+  bin <- as.numeric(pos > 0)
+  
+  #Randomly accept anchors with accept_rate probability above quantile=q
+  accept <- bin*accept_rate > runif(length(bin), 0, 1)
+
   #Add this column
-  flag_bz <- anchors$flag
-  flag_bz[anchors$flag==FALSE] <- accept
-  anchors['flag'] <- flag_bz
-  
+  flag <- anchors$Consistent
+  flag[anchors$Consistent==FALSE] <- accept
+  anchors['Retain_ss'] <- flag
+
   return(anchors)
 }
 
