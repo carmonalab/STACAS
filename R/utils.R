@@ -73,32 +73,10 @@ reweight_anchors <- function(ref.anchors,
   return(ref.anchors)
 }
 
-# Boltzmann-based rejection of inconsistent anchors
-# q: quantile score of non-inconsistent anchors
-# accept_rate: probability of accepting anchors above the quantile score
-
-boltzmann_based_rejection <- function(anchors, accept_rate = 0.5, q = 1){
-  
-  if (q<1) {
-    e0 <- quantile(anchors$score, q)                  #scale is given by 'q' quantile score
-    DE <- anchors[anchors$Consistent==FALSE, "score"] - e0   #DE is given by the actual score of inconsistent anchors.   
-    kT <- quantile(DE[DE>0],1-accept_rate)
-    rejection_prob <- vapply(exp(-DE/kT), function(x){min(1,x)}, numeric(1))
-    
-    accept <- rejection_prob**(accept_rate) < runif(length(DE), 0, 1)
-    
-    #Add this column
-    flag_bz <- anchors$Consistent
-    flag_bz[anchors$Consistent==FALSE] <- accept
-  } else {
-    flag_bz <- anchors$Consistent
-  }
-  
-  anchors['Retain_ss'] <- flag_bz
-  return(anchors)
-}
-
-probabilistic_reject <- function(anchors, accept_rate=0, q=0, seed=123){
+# Probabilistic rejection of inconsistent anchors
+# accept_rate: probability of rejecting anchors when labels are inconsistent
+# q: anchor score quantile above which probabilistic rejection applies
+probabilistic_reject <- function(anchors, accept_rate=0, q=0, seed=seed){
   
   set.seed(seed)
   
