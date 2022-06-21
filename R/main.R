@@ -86,11 +86,11 @@ FindAnchors.STACAS <- function (
     
     #Genes to exclude from variable features
     if (is.null(genesBlockList)) { 
-      genes.block <- NULL
-    } else if (genesBlockList == "default") {
-      genes.block <- get.blocklist(object.list[[1]]) 
+      genes.block <- NULL #no excluded genes
+    } else if (class(genesBlockList) == "list") {
+      genes.block <- genesBlockList #user-provided list
     } else {
-      genes.block <- genesBlockList
+      genes.block <- get.blocklist(object.list[[1]])  #default list
     }
 
     n.this <- anchor.features
