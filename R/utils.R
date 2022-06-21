@@ -168,14 +168,14 @@ weighted.Anchors.STACAS <- function(
   return(similarity.matrix)
 }
 
-select.variable.genes = function(obj, nfeat=1500, blacklist=NULL, min.exp=0.01, max.exp=3){
+select.variable.genes = function(obj, nfeat=1500, genesBlockList=NULL, min.exp=0.01, max.exp=3){
   
   obj <- Seurat::FindVariableFeatures(obj, nfeatures = nfeat)
   
   varfeat <- obj@assays$RNA@var.features
   
-  if (!is.null(blacklist)) {
-    removeGenes1 <- varfeat[varfeat %in% unlist(blacklist)]
+  if (!is.null(genesBlockList)) {
+    removeGenes1 <- varfeat[varfeat %in% unlist(genesBlockList)]
     varfeat <- setdiff(varfeat, removeGenes1)
   }
   #Also remove genes that are very poorly or always expressed (=not really variable genes)

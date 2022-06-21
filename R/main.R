@@ -98,7 +98,7 @@ FindAnchors.STACAS <- function (
       message("Computing ", anchor.features, " integration features")
     }
     object.list <- lapply(object.list, function(x) {
-      select.variable.genes(x, nfeat = n.this, min.exp=0.01, max.exp=3, blacklist=genes.block)
+      select.variable.genes(x, nfeat = n.this, min.exp=0.01, max.exp=3, genesBlockList=genes.block)
     })
     
     #Combine variable features from multiple samples into single list
