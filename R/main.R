@@ -12,9 +12,10 @@
 #' @param reference  A vector specifying the (indices of the) objects to be used as a reference during integration.
 #' If NULL (default), all pairwise anchors are found.
 #' @param anchor.features Can be either: \itemize{
-#'   \item{A numeric value. This will call \code{Seurat::SelectIntegrationFeatures} to select \code{anchor.feautures}
+#'   \item{A numeric value. This will call \code{Seurat::SelectIntegrationFeatures} to identify \code{anchor.features}
 #'       genes for anchor finding.}
-#'   \item{A pre-calculated vector of features to be used for anchor search.}}
+#'   \item{A pre-calculated vector of integration features to be used for anchor search.}}
+#' @param genesBlockList  If \code{anchor.features} is numeric, \code{genesBlockList} optionally takes a list of vectors of gene names. These genes will be removed from the integration features. If set to "default", STACAS uses its internal list \code{data("genes.blocklist")}. This is useful to mitigate effect of genes associated with technical artifacts or batch effects (e.g. mitochondrial, heat-shock response). 
 #' @param dims The number of dimensions used for PCA reduction
 #' @param normalization.method Which normalization method was used to prepare the data - either LogNormalize (default) or SCT
 #' @param k.anchor The number of neighbors to use for identifying anchors
@@ -29,9 +30,7 @@
 #' @param seed Random seed for probabilistic anchor acceptance
 #' @param verbose Print all output
 #' 
-#' @return Returns an AnchorSet object, which can be directly applied to Seurat integration using
-#'  \code{Seurat::IntegrateData}, or optionally first filtered/weighted by anchor pairwise distance
-#'  using \code{FilterAnchors.STACAS}
+#' @return Returns an AnchorSet object, which can be passed to \code{IntegrateData.STACAS}
 #' @import Seurat
 #' @export
 
@@ -40,6 +39,7 @@ FindAnchors.STACAS <- function (
   assay = NULL,
   reference = NULL,
   anchor.features = 500,
+  genesBlockList = "default",
   dims = 1:10,
   normalization.method = c("LogNormalize", "SCT"),
   k.anchor = 5,
@@ -85,14 +85,20 @@ FindAnchors.STACAS <- function (
   if (is.numeric(anchor.features)) {
     
     #Genes to exclude from variable features
-    genes.block <- get.blocklist(object.list[[1]])
-    
+    if (is.null(genesBlockList)) { 
+      genes.block <- NULL #no excluded genes
+    } else if (class(genesBlockList) == "list") {
+      genes.block <- genesBlockList #user-provided list
+    } else {
+      genes.block <- get.blocklist(object.list[[1]])  #default list
+    }
+
     n.this <- anchor.features
     if (verbose) {
       message("Computing ", anchor.features, " integration features")
     }
     object.list <- lapply(object.list, function(x) {
-      select.variable.genes(x, nfeat = n.this, min.exp=0.01, max.exp=3, blacklist=genes.block)
+      select.variable.genes(x, nfeat = n.this, min.exp=0.01, max.exp=3, genesBlockList=genes.block)
     })
     
     #Combine variable features from multiple samples into single list

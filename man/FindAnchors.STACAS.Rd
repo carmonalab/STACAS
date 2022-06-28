@@ -9,6 +9,7 @@ FindAnchors.STACAS(
   assay = NULL,
   reference = NULL,
   anchor.features = 500,
+  genesBlockList = "default",
   dims = 1:10,
   normalization.method = c("LogNormalize", "SCT"),
   k.anchor = 5,
@@ -33,9 +34,11 @@ If not specified, uses the default assay.}
 If NULL (default), all pairwise anchors are found.}
 
 \item{anchor.features}{Can be either: \itemize{
-\item{A numeric value. This will call \code{Seurat::SelectIntegrationFeatures} to select \code{anchor.feautures}
+\item{A numeric value. This will call \code{Seurat::SelectIntegrationFeatures} to identify \code{anchor.features}
     genes for anchor finding.}
-\item{A pre-calculated vector of features to be used for anchor search.}}}
+\item{A pre-calculated vector of integration features to be used for anchor search.}}}
+
+\item{genesBlockList}{If \code{anchor.features} is numeric, \code{genesBlockList} optionally takes a list of vectors of gene names. These genes will be removed from the integration features. If set to "default", STACAS uses its internal list \code{data("genes.blocklist")}. This is useful to mitigate effect of genes associated with technical artifacts or batch effects (e.g. mitochondrial, heat-shock response).}
 
 \item{dims}{The number of dimensions used for PCA reduction}
 
@@ -62,9 +65,7 @@ alignment}
 \item{verbose}{Print all output}
 }
 \value{
-Returns an AnchorSet object, which can be directly applied to Seurat integration using
- \code{Seurat::IntegrateData}, or optionally first filtered/weighted by anchor pairwise distance
- using \code{FilterAnchors.STACAS}
+Returns an AnchorSet object, which can be passed to \code{IntegrateData.STACAS}
 }
 \description{
 This function computes anchors between datasets for dataset integration. It is based on the Seurat function
