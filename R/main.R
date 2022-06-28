@@ -214,6 +214,13 @@ SampleTree.STACAS <- function (
     nanch[[as.character(-i)]] <- strength_function(subset(anchors,dataset1==i),method = method)
   }
   
+  #Which is the most connected dataset?
+  base <- which.max(nanch)
+  if (!is.null(obj.names)) { 
+    base <- obj.names[base]
+  }    
+  message(sprintf("Building integration tree with base dataset: %s", base))
+  
   for (r in 1:nrow(sample.tree)) {
     pair <- sample.tree[r, ]
     
