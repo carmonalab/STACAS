@@ -170,7 +170,7 @@ weighted.Anchors.STACAS <- function(
 
 select.variable.genes = function(obj, nfeat=1500, genesBlockList=NULL, min.exp=0.01, max.exp=3){
   
-  obj <- Seurat::FindVariableFeatures(obj, nfeatures = nfeat)
+  obj <- Seurat::FindVariableFeatures(obj, nfeatures = 10000)
   
   varfeat <- obj@assays$RNA@var.features
   
@@ -182,8 +182,9 @@ select.variable.genes = function(obj, nfeat=1500, genesBlockList=NULL, min.exp=0
   means <- apply(obj@assays$RNA@data[varfeat,], 1, mean)
   removeGenes2 <- names(means[means<min.exp | means>max.exp])
  
-  varfeat <- setdiff(varfeat, removeGenes2 )
-  obj@assays$RNA@var.features <- varfeat
+  varfeat <- setdiff(varfeat, removeGenes2)
+  
+  obj@assays$RNA@var.features <- varfeat[1:nfeat]
   
   return(obj)
 }  
