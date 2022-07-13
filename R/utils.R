@@ -168,7 +168,7 @@ weighted.Anchors.STACAS <- function(
   return(similarity.matrix)
 }
 
-select.variable.genes = function(obj, nfeat=1500, genesBlockList=NULL, min.exp=0.01, max.exp=3){
+FindVariableFeatures.STACAS = function(obj, nfeat=1500, genesBlockList=NULL, min.exp=0.01, max.exp=3){
   
   obj <- Seurat::FindVariableFeatures(obj, nfeatures = 10000)
   
