@@ -38,7 +38,11 @@ If NULL (default), all pairwise anchors are found.}
     genes for anchor finding.}
 \item{A pre-calculated vector of integration features to be used for anchor search.}}}
 
-\item{genesBlockList}{If \code{anchor.features} is numeric, \code{genesBlockList} optionally takes a list of vectors of gene names. These genes will be removed from the integration features. If set to "default", STACAS uses its internal list \code{data("genes.blocklist")}. This is useful to mitigate effect of genes associated with technical artifacts or batch effects (e.g. mitochondrial, heat-shock response).}
+\item{genesBlockList}{If \code{anchor.features} is numeric, \code{genesBlockList} optionally takes a list of vectors of
+gene names. These genes will be removed from the integration features. If set to "default",
+STACAS uses its internal list \code{data("genes.blocklist")}.
+This is useful to mitigate effect of genes associated with technical artifacts or batch effects
+(e.g. mitochondrial, heat-shock response).}
 
 \item{dims}{The number of dimensions used for PCA reduction}
 

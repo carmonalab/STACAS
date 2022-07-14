@@ -1,3 +1,43 @@
+#' Find variable features for STACAS
+#'
+#' Select highly variable genes (HVG) from an expression matrix. Genes from a blocklist
+#' (e.g. cell cycling genes, mitochondrial genes) can be excluded from the list of
+#' variable genes, as well as genes with very low or very high average expression.
+#'
+#' @param obj A Seurat object containing an expression matrix
+#' @param nfeat Number of top HVG to be returned
+#' @param genesBlocklist A list of genes to be excluded from the resulting HVG
+#' @param min.exp Minimum average normalized expression variable for HVG. If lower, the gene will be excluded
+#' @param max.exp Maximum average normalized expression variable for HVG. If higher, the gene will be excluded
+#' @return Returns a list of highly variable genes
+#' @import Seurat
+#' @export
+#' 
+FindVariableFeatures.STACAS = function(obj, nfeat=1500, genesBlockList=NULL, min.exp=0.01, max.exp=3){
+  
+  #Calculate a fixed number of HVG, then filtered to nfeat at the end
+  obj <- Seurat::FindVariableFeatures(obj, nfeatures = 10000)
+  
+  varfeat <- obj@assays$RNA@var.features
+  
+  if (!is.null(genesBlockList)) {
+    removeGenes1 <- varfeat[varfeat %in% unlist(genesBlockList)]
+    varfeat <- setdiff(varfeat, removeGenes1)
+  }
+  #Also remove genes that are very poorly or always expressed (=not really variable genes)
+  means <- apply(obj@assays$RNA@data[varfeat,], 1, mean)
+  removeGenes2 <- names(means[means<min.exp | means>max.exp])
+  
+  varfeat <- setdiff(varfeat, removeGenes2)
+  n <- min(length(varfeat), nfeat)
+  
+  obj@assays$RNA@var.features <- varfeat[1:n]
+  
+  return(obj)
+}  
+
+
+
 #' Find integration anchors using STACAS
 #'
 #' This function computes anchors between datasets for dataset integration. It is based on the Seurat function
@@ -15,7 +55,11 @@
 #'   \item{A numeric value. This will call \code{Seurat::SelectIntegrationFeatures} to identify \code{anchor.features}
 #'       genes for anchor finding.}
 #'   \item{A pre-calculated vector of integration features to be used for anchor search.}}
-#' @param genesBlockList  If \code{anchor.features} is numeric, \code{genesBlockList} optionally takes a list of vectors of gene names. These genes will be removed from the integration features. If set to "default", STACAS uses its internal list \code{data("genes.blocklist")}. This is useful to mitigate effect of genes associated with technical artifacts or batch effects (e.g. mitochondrial, heat-shock response). 
+#' @param genesBlockList  If \code{anchor.features} is numeric, \code{genesBlockList} optionally takes a list of vectors of
+#'     gene names. These genes will be removed from the integration features. If set to "default",
+#'     STACAS uses its internal list \code{data("genes.blocklist")}.
+#'     This is useful to mitigate effect of genes associated with technical artifacts or batch effects
+#'     (e.g. mitochondrial, heat-shock response). 
 #' @param dims The number of dimensions used for PCA reduction
 #' @param normalization.method Which normalization method was used to prepare the data - either LogNormalize (default) or SCT
 #' @param k.anchor The number of neighbors to use for identifying anchors
