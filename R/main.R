@@ -85,7 +85,7 @@ FindAnchors.STACAS <- function (
     assay <- sapply(X = object.list, FUN = DefaultAssay)
   }
 
-  object.list <- check.genes(object.list)
+  genes.conserved <- check.genes(object.list)
   
   #Calculate anchor genes
   if (is.numeric(anchor.features)) {
