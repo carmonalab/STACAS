@@ -182,6 +182,27 @@ get.blocklist = function(obj) {
   }
 }
 
+check.genes <- function(obj.list) {
+  allgenes <- rownames(obj.list[[1]])
+  lgt <- length(obj.list) 
+  for (i in 2:lgt) {
+    allgenes <- c(allgenes, rownames(obj.list[[i]]))
+  }
+  frac <- table(allgenes)/lgt
+  
+  found.in.all <- names(frac)[frac == 1]
+  frac.all <- length(found.in.all) / length(unique(allgenes))
+  
+  if (frac.all < 1) {
+    message(sprintf("%.1f %% of genes found across all datasets", 100*frac.all))
+  }  
+  if (frac.all < 0.5) {
+    warning("More than half of the genes were not consistently found across datasets. Please check that datasets use the same gene symbols")
+  }
+  
+  return(found.in.all)
+}
+
 # Count anchors between data sets
 # IMPORTED from Seurat 3.2.1
 CountAnchors.Seurat <- function(

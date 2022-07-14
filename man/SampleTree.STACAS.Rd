@@ -7,7 +7,7 @@
 SampleTree.STACAS(
   anchorset,
   obj.names = NULL,
-  hclust.method = c("average", "single", "complete"),
+  hclust.method = c("ward.D2", "average", "single", "complete"),
   usecol = "score",
   method = c("weight.sum", "counts"),
   semisupervised = TRUE,

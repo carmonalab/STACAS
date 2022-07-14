@@ -16,7 +16,7 @@
 FindVariableFeatures.STACAS = function(obj, nfeat=1500, genesBlockList=NULL, min.exp=0.01, max.exp=3){
   
   #Calculate a fixed number of HVG, then filtered to nfeat at the end
-  obj <- Seurat::FindVariableFeatures(obj, nfeatures = 10000)
+  obj <- Seurat::FindVariableFeatures(obj, nfeatures = 10000, verbose=F)
   
   varfeat <- obj@assays$RNA@var.features
   
@@ -124,10 +124,11 @@ FindAnchors.STACAS <- function (
   } else {
     assay <- sapply(X = object.list, FUN = DefaultAssay)
   }
+
+  obj.list <- check.genes(obj.list)
   
   #Calculate anchor genes
   if (is.numeric(anchor.features)) {
-    
     #Genes to exclude from variable features
     if (is.null(genesBlockList)) { 
       genes.block <- NULL #no excluded genes
@@ -142,7 +143,7 @@ FindAnchors.STACAS <- function (
       message("Computing ", anchor.features, " integration features")
     }
     object.list <- lapply(object.list, function(x) {
-      select.variable.genes(x, nfeat = n.this, min.exp=0.01, max.exp=3, genesBlockList=genes.block)
+      FindVariableFeatures.STACAS(x, nfeat = n.this, genesBlockList=genes.block)
     })
     
     #Combine variable features from multiple samples into single list
@@ -209,7 +210,7 @@ FindAnchors.STACAS <- function (
 SampleTree.STACAS <- function (
     anchorset,
     obj.names = NULL,
-    hclust.method = c("average","single","complete"),
+    hclust.method = c("ward.D2","average","single","complete"),
     usecol = "score",
     method = c("weight.sum","counts"),
     semisupervised = TRUE,
