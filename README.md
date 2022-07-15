@@ -33,20 +33,11 @@ library(remotes)
 remotes::install_github("carmonalab/STACAS")
 ```
 
-### Test the package
-
-Load sample data and test the package:
-```
-library(STACAS)
-
-data(STACAS.sampledata)
-
-STACAS.anchors <- FindAnchors.STACAS(STACAS.sampledata)
-```
-
-### STACAS integration TUTORIAL
+### STACAS integration DEMOS
 
 Find a tutorial for `STACAS` in a complete Seurat integration pipeline at: [STACAS demo](https://carmonalab.github.io/STACAS.demo/STACAS.demo.html)
+
+See also how `STACAS` compares to Seurat for the integration of heterogeneos data sets: [STACAS vs Seurat](https://carmonalab.github.io/STACAS.demo/STACAS.Tcells.html)
 
 
 ### Citation
