@@ -37,7 +37,7 @@ remotes::install_github("carmonalab/STACAS")
 
 Find a tutorial for `STACAS` in a complete Seurat integration pipeline at: [STACAS demo](https://carmonalab.github.io/STACAS.demo/STACAS.demo.html)
 
-See also how `STACAS` compares to Seurat for the integration of heterogeneos data sets: [STACAS vs Seurat](https://carmonalab.github.io/STACAS.demo/STACAS.Tcells.html)
+See also how `STACAS` compares to Seurat for the integration of heterogeneos data sets: [STACAS vs Seurat](https://carmonalab.github.io/STACAS.demo/Tcell.demo.html)
 
 
 ### Citation

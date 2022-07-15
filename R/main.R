@@ -25,8 +25,8 @@
 #' @param k.anchor The number of neighbors to use for identifying anchors
 #' @param k.score The number of neighbors to use for scoring anchors
 #' @param alpha Weight on rPCA distance for rescoring (between 0 and 1).
-#' @param dist.pct Center of logistic function, based on quantile value of rPCA distance distribution
-#' @param dist.scale.factor Scale factor for logistic function (multiplied by SD of rPCA distance distribution)
+#' @param anchor.coverage Center of logistic function, based on quantile value of rPCA distance distribution
+#' @param correction.scale Scale factor for logistic function (multiplied by SD of rPCA distance distribution)
 #' @param cell.labels A metadata column name, storing cell type annotations. These will be taken into account
 #' for semi-supervised alignment (optional). Cells annotated as NA or NULL will not be penalized in semi-supervised
 #' alignment
@@ -49,8 +49,8 @@ FindAnchors.STACAS <- function (
   k.anchor = 5,
   k.score = 30,
   alpha = 0.8,
-  dist.pct = 0.5,
-  dist.scale.factor = 2,
+  anchor.coverage = 0.5,
+  correction.scale = 2,  
   cell.labels = NULL,
   label.confidence = 1,
   seed = 123,
@@ -65,8 +65,8 @@ FindAnchors.STACAS <- function (
   if (alpha<0 | alpha>1) {
     stop("alpha must be a number between 0 and 1")
   }
-  if (dist.pct<0 | dist.pct>1) {
-    stop("dist.pct must be a number between 0 and 1")
+  if (anchor.coverage<0 | anchor.coverage>1) {
+    stop("anchor.coverage must be a number between 0 and 1")
   }
   
   #default assay, or user-defined assay
@@ -142,8 +142,8 @@ FindAnchors.STACAS <- function (
   ref.anchors@anchors['dist.mean'] <- apply(mat, 1, mean)
   
   ref.anchors <- reweight_anchors(ref.anchors, alpha=alpha,
-                                  dist.pct=dist.pct,
-                                  dist.scale.factor=dist.scale.factor)
+                                  dist.pct=anchor.coverage,
+                                  dist.scale.factor=correction.scale)
   if (!is.null(cell.labels)) {
      ref.anchors <- inconsistent_anchors(ref.anchors, cell.labels, seed=seed,
                                          label.confidence=label.confidence,
@@ -298,7 +298,7 @@ FindVariableFeatures.STACAS <- function(
 #'
 #' @param ref.anchors A set of anchors calculated using \code{FindAnchors.STACAS}, containing the pairwise distances between anchors.
 #' @param obj.names Vector of object names, one for each dataset in ref.anchors
-#' @param dist.pct Quantile of rPCA distance distribution
+#' @param anchor.coverage Quantile of rPCA distance distribution
 #' @return A plot of the distribution of rPCA distances
 #' @import ggridges
 #' @export
@@ -307,7 +307,7 @@ FindVariableFeatures.STACAS <- function(
 PlotAnchors.STACAS <- function(
     ref.anchors = NULL,
     obj.names = NULL,
-    dist.pct = 0.5
+    anchor.coverage = 0.5
 ) {
   anchortab <- ref.anchors@anchors
   
@@ -320,11 +320,11 @@ PlotAnchors.STACAS <- function(
     stop("If you provide dataset names, they must be as many as the levels in the anchor set")
   }
   
-  if(dist.pct<0 | dist.pct>1) {
-    stop("Variable dist.pct must be a real number between 0 and 1")
+  if(anchor.coverage<0 | anchor.coverage>1) {
+    stop("Variable anchor.coverage must be a real number between 0 and 1")
   }
   
-  dist.thr = quantile(anchortab$dist.mean, dist.pct)
+  dist.thr = quantile(anchortab$dist.mean, anchor.coverage)
   
   ###Make distribution plots
   anchortab.toprint <- anchortab[]

@@ -15,8 +15,8 @@ FindAnchors.STACAS(
   k.anchor = 5,
   k.score = 30,
   alpha = 0.8,
-  dist.pct = 0.5,
-  dist.scale.factor = 2,
+  anchor.coverage = 0.5,
+  correction.scale = 2,
   cell.labels = NULL,
   label.confidence = 1,
   seed = 123,
@@ -54,9 +54,9 @@ This is useful to mitigate effect of genes associated with technical artifacts o
 
 \item{alpha}{Weight on rPCA distance for rescoring (between 0 and 1).}
 
-\item{dist.pct}{Center of logistic function, based on quantile value of rPCA distance distribution}
+\item{anchor.coverage}{Center of logistic function, based on quantile value of rPCA distance distribution}
 
-\item{dist.scale.factor}{Scale factor for logistic function (multiplied by SD of rPCA distance distribution)}
+\item{correction.scale}{Scale factor for logistic function (multiplied by SD of rPCA distance distribution)}
 
 \item{cell.labels}{A metadata column name, storing cell type annotations. These will be taken into account
 for semi-supervised alignment (optional). Cells annotated as NA or NULL will not be penalized in semi-supervised
