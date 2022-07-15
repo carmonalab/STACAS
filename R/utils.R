@@ -108,13 +108,13 @@ strength_function <- function(anchor.df,
   }
   
   if(method== "mean.score") {
-    if(usecol == "dist.mean")    strength <- 1-anchor.df[,usecol]%>%mean()
-    if(usecol == "score")    strength <- anchor.df[,usecol]%>%mean()
+    if(usecol == "dist.mean")   strength <- mean(1-anchor.df[,usecol])
+    if(usecol == "score")    strength <- mean(anchor.df[,usecol])
   }
 
   if(method== "weight.sum") {
-    if(usecol == "dist.mean")  strength <- (1-anchor.df[,usecol])%>%sum()
-    if(usecol == "score")  strength <- (anchor.df[,usecol])%>%sum()
+    if(usecol == "dist.mean")  strength <- sum((1-anchor.df[,usecol]))
+    if(usecol == "score")  strength <- sum((anchor.df[,usecol]))
   }
   return(strength)    
 }

@@ -300,6 +300,7 @@ FindVariableFeatures.STACAS <- function(
 #' @param obj.names Vector of object names, one for each dataset in ref.anchors
 #' @param dist.pct Quantile of rPCA distance distribution
 #' @return A plot of the distribution of rPCA distances
+#' @import ggridges
 #' @export
 #' 
 

@@ -8,7 +8,7 @@
 
 `STACAS` is ideal to align scRNA-seq datasets that are composed of only partially overlapping cell populations or sub-types, where other methods tend to under-perform.
 
-To see `STACAS` in action on larger scale integration tasks towards the construction of reference T cell maps in cancer and infection, please refer to this paper: [Andreatta et al BioRxiv 2020](https://doi.org/10.1101/2020.06.23.166546).
+To see `STACAS` in action on larger scale integration tasks towards the construction of reference T cell maps in cancer and infection, please refer to these papers: [Andreatta et al. Nat Comm 2021](https://www.nature.com/articles/s41467-021-23324-4) and [Andreatta et al. eLife 2022](https://elifesciences.org/articles/76339)
 
 Multi-study integrated atlases:
 
@@ -19,10 +19,8 @@ Multi-study integrated atlases:
 * viral infection CD4 T cell atlas: https://spica.unil.ch/refs/viral-CD4-T (Seurat object available at https://doi.org/10.6084/m9.figshare.16592693)
 
 
-Find the installation instructions for the package below, and a vignette detailing its functions at [Tutorial (html)](https://carmonalab.github.io/STACAS.demo/tutorial.html) and [Tutorial (repository)](https://github.com/carmonalab/STACAS.demo)
+Find the installation instructions for the package below, and a vignette detailing its functions at [Demo (html)](https://carmonalab.github.io/STACAS.demo/STACAS.demo.html) and [Demo (repository)](https://github.com/carmonalab/STACAS.demo)
 
-If you prefer to avoid installing R packages, you can run `STACAS` in Docker.
-A ready-to-use Docker image with usage instructions is available on [DockerHub](https://hub.docker.com/repository/docker/mandrea1/stacas_demo)
 
 ### Package Installation
 
@@ -43,18 +41,13 @@ library(STACAS)
 
 data(STACAS.sampledata)
 
-STACAS.anchors <- Run.STACAS(STACAS.sampledata)
+STACAS.anchors <- FindAnchors.STACAS(STACAS.sampledata)
 ```
 
 ### STACAS integration TUTORIAL
 
-Find a tutorial for `STACAS` in a complete Seurat integration pipeline at: [STACAS Tutorial](https://carmonalab.github.io/STACAS.demo/tutorial.html)
+Find a tutorial for `STACAS` in a complete Seurat integration pipeline at: [STACAS demo](https://carmonalab.github.io/STACAS.demo/STACAS.demo.html)
 
-To run the code of the tutorial on your machine, download the demo repository: [STACAS Tutorial repo](https://github.com/carmonalab/STACAS.demo) or obtain a [Docker image](https://hub.docker.com/repository/docker/mandrea1/stacas_demo) with all dependencies pre-installed.
-
-### Documentation
-
-See a description of the functions implemented in STACAS at: [STACAS functions](docs/functions.md)
 
 ### Citation
 
