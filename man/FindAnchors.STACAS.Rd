@@ -14,6 +14,7 @@ FindAnchors.STACAS(
   normalization.method = c("LogNormalize", "SCT"),
   k.anchor = 5,
   k.score = 30,
+  alpha = 0.8,
   anchor.coverage = 0.5,
   correction.scale = 2,
   cell.labels = NULL,
@@ -50,6 +51,8 @@ This is useful to mitigate effect of genes associated with technical artifacts o
 \item{k.anchor}{The number of neighbors to use for identifying anchors}
 
 \item{k.score}{The number of neighbors to use for scoring anchors}
+
+\item{alpha}{Weight on rPCA distance for rescoring (between 0 and 1).}
 
 \item{anchor.coverage}{Center of logistic function, based on quantile value of rPCA distance distribution}
 

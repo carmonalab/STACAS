@@ -51,12 +51,12 @@ inconsistent_anchors <- function(anchors, seed=123,
 }
 
 #Re-weight anchors based on combined seurat anchor score and rPCA distance
-reweight_anchors <- function(ref.anchors,
+reweight_anchors <- function(ref.anchors, alpha=0.8,
                                  dist.pct = 0.5,
                                  dist.scale.factor = 2)
 {
   df <- ref.anchors@anchors
-  epsilon <- 10^(-10)
+  eps <- 10^(-6) #small number to avoid log(0)
   
   dist.mean.center = quantile(df$dist.mean,dist.pct)
   dist.mean.scale = sd(df$dist.mean,na.rm = T)/dist.scale.factor
@@ -64,10 +64,10 @@ reweight_anchors <- function(ref.anchors,
   squash <- logistic(x = df$dist.mean, invert = T, 
                      center = dist.mean.center, 
                      scale = dist.mean.scale)
-  df$score <-  squash * df$knn.score
-#  df$score <-  alpha*squash + (1-alpha)*df$knn.score
   
-  df$score[df$score < epsilon ] <- epsilon 
+  #weighted geometric mean
+  logsum = alpha*log(squash + eps) + (1-alpha)*log(df$knn.score + eps)
+  df$score <- exp(logsum) - eps
   
   ref.anchors@anchors <- df
   return(ref.anchors)
