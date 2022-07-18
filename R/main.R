@@ -24,7 +24,6 @@
 #' @param normalization.method Which normalization method was used to prepare the data - either LogNormalize (default) or SCT
 #' @param k.anchor The number of neighbors to use for identifying anchors
 #' @param k.score The number of neighbors to use for scoring anchors
-#' @param alpha Weight on rPCA distance for rescoring (between 0 and 1).
 #' @param anchor.coverage Center of logistic function, based on quantile value of rPCA distance distribution
 #' @param correction.scale Scale factor for logistic function (multiplied by SD of rPCA distance distribution)
 #' @param cell.labels A metadata column name, storing cell type annotations. These will be taken into account
@@ -48,7 +47,6 @@ FindAnchors.STACAS <- function (
   normalization.method = c("LogNormalize", "SCT"),
   k.anchor = 5,
   k.score = 30,
-  alpha = 0.8,
   anchor.coverage = 0.5,
   correction.scale = 2,  
   cell.labels = NULL,
@@ -61,9 +59,6 @@ FindAnchors.STACAS <- function (
   
   if (label.confidence<0 | label.confidence>1) {
     stop("label.confidence must be a number between 0 and 1")
-  }
-  if (alpha<0 | alpha>1) {
-    stop("alpha must be a number between 0 and 1")
   }
   if (anchor.coverage<0 | anchor.coverage>1) {
     stop("anchor.coverage must be a number between 0 and 1")
@@ -141,7 +136,7 @@ FindAnchors.STACAS <- function (
   mat <- ref.anchors@anchors[,c("dist1.2","dist2.1")]
   ref.anchors@anchors['dist.mean'] <- apply(mat, 1, mean)
   
-  ref.anchors <- reweight_anchors(ref.anchors, alpha=alpha,
+  ref.anchors <- reweight_anchors(ref.anchors,
                                   dist.pct=anchor.coverage,
                                   dist.scale.factor=correction.scale)
   if (!is.null(cell.labels)) {
