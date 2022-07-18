@@ -171,7 +171,7 @@ SampleTree.STACAS <- function (
     anchorset,
     obj.names = NULL,
     hclust.method = c("ward.D2","average","single","complete"),
-    usecol = "score",
+    usecol = c("score","dist.mean"),
     method = c("weight.sum","counts"),
     semisupervised = TRUE,
     plot = TRUE
@@ -179,21 +179,18 @@ SampleTree.STACAS <- function (
   
   hclust.method <- hclust.method[1]
   method <- method[1]
-  
-  if (semisupervised & "Retain_ss" %in% colnames(anchorset@anchors)) {
-    anchorset@anchors <- anchorset@anchors[anchorset@anchors$Retain_ss==TRUE,]
-  }
+  usecol = usecol[1]
   
   object.list <- slot(object = anchorset, name = "object.list")
   reference.objects <- slot(object = anchorset, name = "reference.objects")
   anchors <- slot(object = anchorset, name = "anchors")
-  
   objects.ncell <- sapply(X = object.list, FUN = ncol)
   offsets <- slot(object = anchorset, name = "offsets")
   
-  usecol = match.arg(arg = usecol ,choices = c("dist.mean","score"))
-  method = match.arg(arg = method ,choices = c("weight.sum","counts"))
-  
+  if (semisupervised & "Retain_ss" %in% colnames(anchors)) {
+    anchors <- anchors[anchors$Retain_ss==TRUE,]
+  }
+
   ## Compute similarity matrix between datasets
   similarity.matrix <- weighted.Anchors.STACAS(
     anchor.df = anchors,
@@ -222,7 +219,9 @@ SampleTree.STACAS <- function (
   nanch <- list()
   names(x = object.list) <- as.character(-(1:length(x = object.list)))
   for (i in 1:length(object.list)) {
-    nanch[[as.character(-i)]] <- strength_function(subset(anchors,dataset1==i),method = method)
+    nanch[[as.character(-i)]] <- strength_function(subset(anchors,dataset1==i),
+                                                   method = method,
+                                                   usecol=usecol)
   }
   
   #Which is the most connected dataset?

@@ -98,11 +98,9 @@ probabilistic_reject <- function(anchors, accept_rate=0, q=0, seed=seed){
 # To be used in the distance matrix among datasets (when building SampleTree integration)
 strength_function <- function(anchor.df,
                               method = "weight.sum", 
-                              usecol = "dist.mean"
+                              usecol = "score"
                               ){
-  method = match.arg(arg = method ,choices = c("counts","mean.score","weight.sum"))
-  usecol = match.arg(arg = usecol ,choices = c("dist.mean","score"))
-  
+
   if(method== "counts") {
     strength <- nrow(anchor.df)
   }
