@@ -10,7 +10,7 @@ FindAnchors.STACAS(
   reference = NULL,
   anchor.features = 500,
   genesBlockList = "default",
-  dims = 1:10,
+  dims = 1:30,
   normalization.method = c("LogNormalize", "SCT"),
   k.anchor = 5,
   k.score = 30,

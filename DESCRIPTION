@@ -15,15 +15,14 @@ Description: This package implements methods for batch correction and integratio
     would tend to over-correct biological differences. The 2.0 version of our package allows to the users to 
     incorporate explicit information about cell-types in order to assist the integration process.
 biocViews:
-Depends: R (>= 3.6.1)
+Depends: R (>= 4.0.0)
 Imports:
     Seurat(>= 4.0.0),
     future,
     future.apply,
     pbapply,
-    grid,
     ggridges,
-    gridExtra
+    ggplot2
 License: GPL-3
 Encoding: UTF-8
 LazyData: false

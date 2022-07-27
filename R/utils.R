@@ -1052,7 +1052,7 @@ PairwiseIntegrateReference.STACAS <- function(
     weight.reduction = NULL,
     sd.weight = 1,
     sample.tree = NULL,
-    preserve.order = FALSE,
+    preserve.order = TRUE,
     verbose = TRUE
 ) {
   object.list <- slot(object = anchorset, name = "object.list")

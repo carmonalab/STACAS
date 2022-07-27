@@ -36,6 +36,9 @@
 #' 
 #' @return Returns an AnchorSet object, which can be passed to \code{IntegrateData.STACAS}
 #' @import Seurat
+#' @importFrom future nbrOfWorkers
+#' @importFrom future.apply future_lapply
+#' @importFrom pbapply pblapply
 #' @export
 
 FindAnchors.STACAS <- function (
@@ -44,7 +47,7 @@ FindAnchors.STACAS <- function (
   reference = NULL,
   anchor.features = 500,
   genesBlockList = "default",
-  dims = 1:10,
+  dims = 1:30,
   normalization.method = c("LogNormalize", "SCT"),
   k.anchor = 5,
   k.score = 30,
@@ -160,11 +163,13 @@ FindAnchors.STACAS <- function (
 #' @param anchorset Scored anchorsobtained from \code{FindAnchors.STACAS} and \code{FilterAnchors.STACAS} function
 #' @param hclust.method Clustering method to be used (complete, average, single, ward) 
 #' @param usecol Column name to be used to compute sample similarity. Default "score"
-#' @param dist.hard.thr Distance threshold used to mimic original STACAS behavior
+#' @param obj.names Option vector of names for objects in anchorset
 #' @param method Aggregation method to be used among anchors for sample similarity computation. Default: weight.sum
 #' @param semisupervised Whether to use cell type label information (if available)
 #' @param plot Logical indicating if dendrogram must be plotted
 #' @return An integration tree to be passed to the integration function.
+#' @import Seurat
+#' @importFrom stats hclust
 #' @export
 
 SampleTree.STACAS <- function (
@@ -260,6 +265,7 @@ SampleTree.STACAS <- function (
 #' @param min.exp Minimum average normalized expression variable for HVG. If lower, the gene will be excluded
 #' @param max.exp Maximum average normalized expression variable for HVG. If higher, the gene will be excluded
 #' @return Returns a list of highly variable genes
+#' @import Seurat
 #' @export FindVariableFeatures.STACAS
 #' 
 FindVariableFeatures.STACAS <- function(
@@ -300,6 +306,8 @@ FindVariableFeatures.STACAS <- function(
 #' @param anchor.coverage Quantile of rPCA distance distribution
 #' @return A plot of the distribution of rPCA distances
 #' @import ggridges
+#' @import ggplot2
+#' @importFrom grDevices rainbow
 #' @export
 #' 
 
@@ -355,7 +363,7 @@ PlotAnchors.STACAS <- function(
 
 #' IntegrateData.STACAS
 #'
-#' Integrate a list of datasets using STACAS anchors
+#' Integrate a list of datasets using STACAS anchors. Based on the \code{IntegrateData} function from Seurat.
 #'
 #' @param anchorset A set of anchors calculated using \code{FindAnchors.STACAS} and filtered using \code{FilterAnchors.STACAS}
 #' @param new.assay.name Assay to store the integrated data
@@ -365,9 +373,9 @@ PlotAnchors.STACAS <- function(
 #' @param k.weight Number of neighbors for local anchor weighting. Set \code{k.weight="max"} to disable local weighting
 #' @param sample.tree Specify the order of integration. See \code{SampleTree.STACAS} to calculate an integration tree.
 #' @param semisupervised Whether to use cell type label information (if available)
-#' @param preserve.order Do not reorder objects based on size for each pairwise integration.
 #' @param verbose Print progress bar and output
 #' @return A plot of the distribution of rPCA distances
+#' @import Seurat
 #' @export IntegrateData.STACAS
 #' 
 
@@ -380,12 +388,9 @@ IntegrateData.STACAS <- function(
     k.weight = 100,
     sample.tree = NULL,
     semisupervised = TRUE,
-    preserve.order = FALSE,
     verbose = TRUE
 ) {
-  if (!is.null(sample.tree)) {
-    preserve.order = TRUE  #keep tree intact
-  }
+
   normalization.method <- match.arg(arg = normalization.method)
   reference.datasets <- slot(object = anchorset, name = 'reference.objects')
   
@@ -446,7 +451,7 @@ IntegrateData.STACAS <- function(
     dims = dims,
     k.weight = k.weight,
     sample.tree = sample.tree,
-    preserve.order = preserve.order,
+    preserve.order = TRUE,
     verbose = verbose
   )
   
@@ -530,7 +535,7 @@ IntegrateData.STACAS <- function(
       k.weight = k.weight,
       weight.reduction = weight.reduction,
       sd.weight = sd.weight,
-      preserve.order = preserve.order,
+      preserve.order = TRUE,
       eps = eps,
       verbose = verbose
     )
@@ -583,3 +588,98 @@ IntegrateData.STACAS <- function(
     return(unintegrated)
   }
 }
+
+
+#' Run the STACAS integration pipeline
+#'
+#' This function is a wrapper for running the several steps required to integrate single-cell
+#' datasets using STACAS: 1) Finding integration anchors; 2) Calculating the sample tree for
+#' the order of dataset integration; 3) Dataset batch effect correction and integration
+#'
+#' @param object.list A list of Seurat objects. Anchors will be determined between pairs of objects, 
+#' and can subsequently be used for Seurat dataset integration.
+#' @param assay A vector containing the assay to use for each Seurat object in object.list.
+#' If not specified, uses the default assay.
+#' @param reference  A vector specifying the (indices of the) objects to be used as a reference during integration.
+#' If NULL (default), all pairwise anchors are found.
+#' @param anchor.features Can be either: \itemize{
+#'   \item{A numeric value. This will call \code{Seurat::SelectIntegrationFeatures} to identify \code{anchor.features}
+#'       genes for anchor finding.}
+#'   \item{A pre-calculated vector of integration features to be used for anchor search.}}
+#' @param genesBlockList  If \code{anchor.features} is numeric, \code{genesBlockList} optionally takes a list of vectors of
+#'     gene names. These genes will be removed from the integration features. If set to "default",
+#'     STACAS uses its internal list \code{data("genes.blocklist")}.
+#'     This is useful to mitigate effect of genes associated with technical artifacts or batch effects
+#'     (e.g. mitochondrial, heat-shock response). 
+#' @param dims The number of dimensions used for PCA reduction
+#' @param normalization.method Which normalization method was used to prepare the data - either LogNormalize (default) or SCT
+#' @param k.anchor The number of neighbors to use for identifying anchors
+#' @param k.score The number of neighbors to use for scoring anchors
+#' @param k.weight Number of neighbors for local anchor weighting. Set \code{k.weight="max"} to disable local weighting
+#' @param alpha Weight on rPCA distance for rescoring (between 0 and 1).
+#' @param anchor.coverage Center of logistic function, based on quantile value of rPCA distance distribution
+#' @param correction.scale Scale factor for logistic function (multiplied by SD of rPCA distance distribution)
+#' @param cell.labels A metadata column name, storing cell type annotations. These will be taken into account
+#' for semi-supervised alignment (optional). Cells annotated as NA or NULL will not be penalized in semi-supervised
+#' alignment
+#' @param label.confidence How much you trust the provided cell labels (from 0 to 1).
+#' @param seed Random seed for probabilistic anchor acceptance
+#' @param verbose Print all output
+#' 
+#' @return Returns a Seurat object with integrated datasets in 'integrated' assay
+#' @import Seurat
+#' @export
+
+Run.STACAS <- function (
+    object.list = NULL,
+    assay = NULL,
+    reference = NULL,
+    anchor.features = 500,
+    genesBlockList = "default",
+    dims = 1:30,
+    normalization.method = c("LogNormalize", "SCT"),
+    k.anchor = 5,
+    k.score = 30,
+    k.weight = 100,
+    alpha=0.8,
+    anchor.coverage = 0.5,
+    correction.scale = 2,  
+    cell.labels = NULL,
+    label.confidence = 1,
+    seed = 123,
+    verbose = FALSE
+) {
+  
+  # 1. Find anchors
+  stacas_anchors <- FindAnchors.STACAS(object.list, assay=assay, reference=reference,
+                                    anchor.features=anchor.features,
+                                    genesBlockList=genesBlockList, dims=dims,
+                                    normalization.method=normalization.method,
+                                    k.anchor=k.anchor, k.score=k.score,
+                                    alpha=alpha, anchor.coverage=anchor.coverage,
+                                    correction.scale=correction.scale,
+                                    cell.labels=cell.labels, seed=seed,
+                                    label.confidence=label.confidence, verbose=verbose)
+  
+  if (is.null(cell.labels)) {
+    semisupervised <- FALSE
+  } else {
+    semisupervised <- TRUE
+  }
+  
+  # 2. Integration tree
+  tree <- SampleTree.STACAS(
+    anchorset = stacas_anchors,
+    semisupervised = semisupervised
+  )
+  
+  # 3. Integrate datasets
+  integrated <- IntegrateData.STACAS(stacas_anchors, dims=dims, sample.tree=tree,
+                                     k.weight = k.weight, semisupervised = semisupervised,
+                                     normalization.method=normalization.method,
+                                     features.to.integrate=stacas_anchors@anchor.features)
+  
+  return(integrated)
+}
+
+

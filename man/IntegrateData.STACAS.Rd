@@ -13,7 +13,6 @@ IntegrateData.STACAS(
   k.weight = 100,
   sample.tree = NULL,
   semisupervised = TRUE,
-  preserve.order = FALSE,
   verbose = TRUE
 )
 }
@@ -34,13 +33,11 @@ IntegrateData.STACAS(
 
 \item{semisupervised}{Whether to use cell type label information (if available)}
 
-\item{preserve.order}{Do not reorder objects based on size for each pairwise integration.}
-
 \item{verbose}{Print progress bar and output}
 }
 \value{
 A plot of the distribution of rPCA distances
 }
 \description{
-Integrate a list of datasets using STACAS anchors
+Integrate a list of datasets using STACAS anchors. Based on the \code{IntegrateData} function from Seurat.
 }
