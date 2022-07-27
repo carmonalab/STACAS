@@ -670,7 +670,8 @@ Run.STACAS <- function (
   # 2. Integration tree
   tree <- SampleTree.STACAS(
     anchorset = stacas_anchors,
-    semisupervised = semisupervised
+    semisupervised = semisupervised,
+    plot = FALSE
   )
   
   # 3. Integrate datasets
