@@ -12,8 +12,8 @@
 #' @param reference  A vector specifying the (indices of the) objects to be used as a reference during integration.
 #' If NULL (default), all pairwise anchors are found.
 #' @param anchor.features Can be either: \itemize{
-#'   \item{A numeric value. This will call \code{Seurat::SelectIntegrationFeatures} to identify \code{anchor.features}
-#'       genes for anchor finding.}
+#'   \item{A numeric value. This will call \code{FindVariableFeatures.STACAS} to identify \code{anchor.features}
+#'       that are consistently variable across datasets}
 #'   \item{A pre-calculated vector of integration features to be used for anchor search.}}
 #' @param genesBlockList  If \code{anchor.features} is numeric, \code{genesBlockList} optionally takes a list of vectors of
 #'     gene names. These genes will be removed from the integration features. If set to "default",
@@ -31,6 +31,8 @@
 #' for semi-supervised alignment (optional). Cells annotated as NA or NULL will not be penalized in semi-supervised
 #' alignment
 #' @param label.confidence How much you trust the provided cell labels (from 0 to 1).
+#' @param future.maxSize For multi-core functionality, maximum allowed total size (in Gb) of global variables.
+#'      To be incremented if required by \code{future.apply}
 #' @param seed Random seed for probabilistic anchor acceptance
 #' @param verbose Print all output
 #' 
@@ -56,6 +58,7 @@ FindAnchors.STACAS <- function (
   correction.scale = 2,  
   cell.labels = NULL,
   label.confidence = 1,
+  future.maxSize = 16,
   seed = 123,
   verbose = FALSE
 ) {
@@ -71,6 +74,8 @@ FindAnchors.STACAS <- function (
   if (alpha<0 | alpha>1) {
     stop("alpha must be a number between 0 and 1")
   }
+  
+  options(future.globals.maxSize= future.maxSize*1000*1024^2)
   
   #default assay, or user-defined assay
   if (!is.null(assay)) {
