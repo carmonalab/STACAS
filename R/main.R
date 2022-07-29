@@ -699,7 +699,7 @@ Run.STACAS <- function (
   if(normalization.method == "LogNormalize"){
     integrated <- ScaleData(integrated)
   }
-  integrated <- RunPCA(npcs=max(dims))
+  integrated <- RunPCA(integrated, npcs=max(dims))
   
   return(integrated)
 }
