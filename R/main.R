@@ -695,7 +695,8 @@ Run.STACAS <- function (
                                      features.to.integrate=stacas_anchors@anchor.features)
   
   # 4. Calculate batch-corrected PCA space
-  if(normalization.method == "LogNormalize") {
+  normalization.method <- match.arg(arg = normalization.method)
+  if(normalization.method == "LogNormalize"){
     integrated <- ScaleData(integrated)
   }
   integrated <- RunPCA(npcs=max(dims))
