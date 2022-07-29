@@ -262,7 +262,7 @@ SampleTree.STACAS <- function (
 #'
 #' Select highly variable genes (HVG) from an expression matrix. Genes from a blocklist
 #' (e.g. cell cycling genes, mitochondrial genes) can be excluded from the list of
-#' variable genes, as well as genes with very low or very high average expression.
+#' variable genes, as well as genes with very low or very high average expression
 #'
 #' @param obj A Seurat object containing an expression matrix
 #' @param nfeat Number of top HVG to be returned
@@ -295,7 +295,7 @@ FindVariableFeatures.STACAS <- function(
   } else if (class(genesBlockList) == "list") {
     genes.block <- genesBlockList #user-provided list
   } else {
-    genes.block <- get.blocklist(object.list[[1]])  #default list
+    genes.block <- get.blocklist(obj)  #default list
   }
   
   varfeat <- setdiff(varfeat, unlist(genes.block))
