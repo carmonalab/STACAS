@@ -648,7 +648,7 @@ Run.STACAS <- function (
     object.list = NULL,
     assay = NULL,
     reference = NULL,
-    anchor.features = 500,
+    anchor.features = 1000,
     genesBlockList = "default",
     dims = 1:30,
     normalization.method = c("LogNormalize", "SCT"),
@@ -693,6 +693,12 @@ Run.STACAS <- function (
                                      k.weight = k.weight, semisupervised = semisupervised,
                                      normalization.method=normalization.method,
                                      features.to.integrate=stacas_anchors@anchor.features)
+  
+  # 4. Calculate batch-corrected PCA space
+  if(normalization.method == "LogNormalize") {
+    integrated <- ScaleData(integrated)
+  }
+  integrated <- RunPCA(npcs=max(dims))
   
   return(integrated)
 }

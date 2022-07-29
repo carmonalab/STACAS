@@ -8,7 +8,7 @@ Run.STACAS(
   object.list = NULL,
   assay = NULL,
   reference = NULL,
-  anchor.features = 500,
+  anchor.features = 1000,
   genesBlockList = "default",
   dims = 1:30,
   normalization.method = c("LogNormalize", "SCT"),
