@@ -640,7 +640,7 @@ IntegrateData.STACAS <- function(
 #' @param seed Random seed for probabilistic anchor acceptance
 #' @param verbose Print all output
 #' 
-#' @return Returns a Seurat object with integrated datasets in 'integrated' assay
+#' @return Returns a \code{Seurat} object with a new integrated Assay. Also, centered, scaled variable features data are returned in the scale.data slot, and the pca of these batch-corrected scale data in the pca `reduction` slot 
 #' @import Seurat
 #' @export
 

@@ -72,7 +72,7 @@ alignment}
 \item{verbose}{Print all output}
 }
 \value{
-Returns a Seurat object with integrated datasets in 'integrated' assay
+Returns a \code{Seurat} object with a new integrated Assay. Also, centered, scaled variable features data are returned in the scale.data slot, and the pca of these batch-corrected scale data in the pca `reduction` slot
 }
 \description{
 This function is a wrapper for running the several steps required to integrate single-cell
