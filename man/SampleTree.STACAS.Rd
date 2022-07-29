@@ -17,6 +17,8 @@ SampleTree.STACAS(
 \arguments{
 \item{anchorset}{Scored anchorsobtained from \code{FindAnchors.STACAS} and \code{FilterAnchors.STACAS} function}
 
+\item{obj.names}{Option vector of names for objects in anchorset}
+
 \item{hclust.method}{Clustering method to be used (complete, average, single, ward)}
 
 \item{usecol}{Column name to be used to compute sample similarity. Default "score"}
@@ -26,8 +28,6 @@ SampleTree.STACAS(
 \item{semisupervised}{Whether to use cell type label information (if available)}
 
 \item{plot}{Logical indicating if dendrogram must be plotted}
-
-\item{dist.hard.thr}{Distance threshold used to mimic original STACAS behavior}
 }
 \value{
 An integration tree to be passed to the integration function.
