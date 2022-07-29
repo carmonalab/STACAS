@@ -39,7 +39,7 @@ IntegrateData.STACAS(
 \item{verbose}{Print progress bar and output}
 }
 \value{
-A plot of the distribution of rPCA distances
+Returns a \code{Seurat} object with a new integrated Assay. If normalization.method = "LogNormalize", the integrated data is returned to the data slot and can be treated as log-normalized, corrected data. If normalization.method = "SCT", the integrated data is returned to the scale.data slot and can be treated as centered, corrected Pearson residuals.
 }
 \description{
 Integrate a list of datasets using STACAS anchors

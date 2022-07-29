@@ -42,7 +42,7 @@ FindAnchors.STACAS <- function (
   object.list = NULL,
   assay = NULL,
   reference = NULL,
-  anchor.features = 500,
+  anchor.features = 1000,
   genesBlockList = "default",
   dims = 1:10,
   normalization.method = c("LogNormalize", "SCT"),
@@ -256,7 +256,11 @@ SampleTree.STACAS <- function (
 #'
 #' @param obj A Seurat object containing an expression matrix
 #' @param nfeat Number of top HVG to be returned
-#' @param genesBlocklist A list of genes to be excluded from the resulting HVG
+#' @param genesBlocklist Optionally takes a list of vectors of gene names. These genes will be removed from initial HVG set. If set to "default",
+#'     STACAS uses its internal list \code{data("genes.blocklist")}.
+#'     This is useful to mitigate effect of genes associated with technical artifacts or batch effects
+#'     (e.g. mitochondrial, heat-shock response). 
+#'     If set to `NULL` no genes will be excluded
 #' @param min.exp Minimum average normalized expression variable for HVG. If lower, the gene will be excluded
 #' @param max.exp Maximum average normalized expression variable for HVG. If higher, the gene will be excluded
 #' @return Returns a list of highly variable genes
@@ -265,7 +269,7 @@ SampleTree.STACAS <- function (
 FindVariableFeatures.STACAS <- function(
     obj,
     nfeat=1500,
-    genesBlockList=NULL,
+    genesBlockList="default",
     min.exp=0.01,
     max.exp=3)
 {
@@ -275,10 +279,16 @@ FindVariableFeatures.STACAS <- function(
   
   varfeat <- obj@assays$RNA@var.features
   
-  if (!is.null(genesBlockList)) {
-    removeGenes1 <- varfeat[varfeat %in% unlist(genesBlockList)]
-    varfeat <- setdiff(varfeat, removeGenes1)
+  if (is.null(genesBlockList)) { 
+    genes.block <- NULL #no excluded genes
+  } else if (class(genesBlockList) == "list") {
+    genes.block <- genesBlockList #user-provided list
+  } else {
+    genes.block <- get.blocklist(object.list[[1]])  #default list
   }
+  
+  varfeat <- setdiff(varfeat, unlist(genes.block))
+  
   #Also remove genes that are very poorly or always expressed (=not really variable genes)
   means <- apply(obj@assays$RNA@data[varfeat,], 1, mean)
   removeGenes2 <- names(means[means<min.exp | means>max.exp])
@@ -367,7 +377,9 @@ PlotAnchors.STACAS <- function(
 #' @param semisupervised Whether to use cell type label information (if available)
 #' @param preserve.order Do not reorder objects based on size for each pairwise integration.
 #' @param verbose Print progress bar and output
-#' @return A plot of the distribution of rPCA distances
+#' @return Returns a \code{Seurat} object with a new integrated Assay. If normalization.method = "LogNormalize", the integrated data is returned to the data slot and can be treated as log-normalized, corrected data. If normalization.method = "SCT", the integrated data is returned to the scale.data slot and can be treated as centered, corrected Pearson residuals.
+
+
 #' @export IntegrateData.STACAS
 #' 
 

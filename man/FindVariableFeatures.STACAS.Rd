@@ -7,7 +7,7 @@
 \method{FindVariableFeatures}{STACAS}(
   obj,
   nfeat = 1500,
-  genesBlockList = NULL,
+  genesBlockList = "default",
   min.exp = 0.01,
   max.exp = 3
 )
@@ -21,7 +21,11 @@
 
 \item{max.exp}{Maximum average normalized expression variable for HVG. If higher, the gene will be excluded}
 
-\item{genesBlocklist}{A list of genes to be excluded from the resulting HVG}
+\item{genesBlocklist}{Optionally takes a list of vectors of gene names. These genes will be removed from initial HVG set. If set to "default",
+STACAS uses its internal list \code{data("genes.blocklist")}.
+This is useful to mitigate effect of genes associated with technical artifacts or batch effects
+(e.g. mitochondrial, heat-shock response). 
+If set to `NULL` no genes will be excluded}
 }
 \value{
 Returns a list of highly variable genes
