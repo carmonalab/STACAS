@@ -4,23 +4,12 @@
   <img height="80" src="docs/white.sq.png">
 </p>
 
-`STACAS` is a method for anchor identification, designed to be easily incorporated in Seurat pipelines for batch correction and integration of scRNA-seq datasets ([Andreatta & Carmona, Bioinformatics 2020](http://dx.doi.org/10.1093/bioinformatics/btaa755)).
+[STACAS](https://github.com/carmonalab/STACAS) is a method for scRNA-seq integration, specifically designed to align scRNA-seq datasets that are composed of only partially overlapping cell populations or sub-types.
+It is based on the [Seurat](https://cran.r-project.org/web/packages/Seurat/index.html) integration framework, and adds the following innovations:
 
-`STACAS` is ideal to align scRNA-seq datasets that are composed of only partially overlapping cell populations or sub-types, where other methods tend to under-perform.
-
-To see `STACAS` in action on larger scale integration tasks towards the construction of reference T cell maps in cancer and infection, please refer to these papers: [Andreatta et al. Nat Comm 2021](https://www.nature.com/articles/s41467-021-23324-4) and [Andreatta et al. eLife 2022](https://elifesciences.org/articles/76339)
-
-Multi-study integrated atlases:
-
-* tumor-infiltrating T cell atlas: https://spica.unil.ch/refs/TIL (Seurat object available at https://doi.org/10.6084/m9.figshare.12478571)
-
-* viral infection CD8 T cell atlas: https://spica.unil.ch/refs/viral-CD8-T (Seurat object available at https://doi.org/10.6084/m9.figshare.12489518)
-
-* viral infection CD4 T cell atlas: https://spica.unil.ch/refs/viral-CD4-T (Seurat object available at https://doi.org/10.6084/m9.figshare.16592693)
-
-
-Find the installation instructions for the package below, and a vignette detailing its functions at [Demo (html)](https://carmonalab.github.io/STACAS.demo/STACAS.demo.html) and [Demo (repository)](https://github.com/carmonalab/STACAS.demo)
-
+* anchors are down-weighted based on their distance in reciprocal PCA space
+* guide trees for pairwaise integration are constructed based on the 'centrality' of datasets, as measured by the sum of their re-weighted anchor scores
+* Prior knowledge, given as cell labels, can be used by the algorithm to remove inconsistent anchors, and perform semi-supervised integration 
 
 ## Package Installation
 
@@ -64,7 +53,7 @@ pbmcsca.semisup <- RunUMAP(pbmcsca.semisup, dims = 1:30)
 
 ## STACAS integration DEMOS
 
-Find a tutorial for `STACAS` in a complete Seurat integration pipeline at: [STACAS demo](https://carmonalab.github.io/STACAS.demo/STACAS.demo.html)
+Find a tutorial for `STACAS` in a complete Seurat integration pipeline at: [STACAS demo](https://carmonalab.github.io/STACAS.demo/STACAS.demo.html) (code and instructions [here](https://github.com/carmonalab/STACAS.demo))
 
 See also how `STACAS` compares to Seurat for the integration of heterogeneos data sets: [STACAS vs Seurat](https://carmonalab.github.io/STACAS.demo/Tcell.demo.html)
 
