@@ -34,7 +34,7 @@ remotes::install_github("carmonalab/STACAS")
 ```
 
 ## STACAS basic usage
-### Standard integration
+### Standard integration (more [here](https://carmonalab.github.io/STACAS.demo/STACAS.demo.html#standard-integration))
 ```r
 library(STACAS)
 
@@ -54,7 +54,7 @@ pbmcsca.integrated <- RunUMAP(pbmcsca.integrated, dims = 1:30)
 DimPlot(pbmcsca.integrated, group.by = c("Method","CellType")) 
 ```
 
-### Semi-supervised integration
+### Semi-supervised integration (more [here](https://carmonalab.github.io/STACAS.demo/STACAS.demo.html#semi-supervised-integration))
 
 ```r
 pbmcsca.semisup <- NormalizeData(pbmcsca) |> SplitObject(split.by = "Method") |> Run.STACAS(cell.labels = "CellType")
