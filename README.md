@@ -22,19 +22,20 @@ Multi-study integrated atlases:
 Find the installation instructions for the package below, and a vignette detailing its functions at [Demo (html)](https://carmonalab.github.io/STACAS.demo/STACAS.demo.html) and [Demo (repository)](https://github.com/carmonalab/STACAS.demo)
 
 
-### Package Installation
+## Package Installation
 
 To install STACAS directly from the Git repository, run the following code from within RStudio:
 
-```
+```r
 if (!requireNamespace("remotes")) install.packages("remotes")
 library(remotes)
 
 remotes::install_github("carmonalab/STACAS")
 ```
 
-### STACAS basic usage
-```
+## STACAS basic usage
+### Standard integration
+```r
 library(STACAS)
 
 # get the test dataset "pbmcsca" from SeuratData package
@@ -46,13 +47,22 @@ InstallData("pbmcsca")
 data("pbmcsca")
 
 # Integrate scRNA-seq datasets generated with different methods/technologies
-pbmcsca <- pbmcsca |> NormalizeData() |> SplitObject(split.by = "Method") |> Run.STACAS() |> RunUMAP(dims = 1:30) 
+pbmcsca.integrated <- NormalizeData(pbmcsca) |> SplitObject(split.by = "Method") |> Run.STACAS()
+pbmcsca.integrated <- RunUMAP(pbmcsca.integrated, dims = 1:30) 
 
 # Visualize
-DimPlot(pbmcsca, group.by = c("Method","CellType")) 
+DimPlot(pbmcsca.integrated, group.by = c("Method","CellType")) 
 ```
 
-### STACAS integration DEMOS
+### Semi-supervised integration
+
+```r
+pbmcsca.semisup <- NormalizeData(pbmcsca) |> SplitObject(split.by = "Method") |> Run.STACAS(cell.labels = "CellType")
+pbmcsca.semisup <- RunUMAP(pbmcsca.semisup, dims = 1:30) 
+
+```
+
+## STACAS integration DEMOS
 
 Find a tutorial for `STACAS` in a complete Seurat integration pipeline at: [STACAS demo](https://carmonalab.github.io/STACAS.demo/STACAS.demo.html)
 
