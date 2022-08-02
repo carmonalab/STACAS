@@ -33,6 +33,25 @@ library(remotes)
 remotes::install_github("carmonalab/STACAS")
 ```
 
+### STACAS basic usage
+```
+library(STACAS)
+
+# get the test dataset "pbmcsca" from SeuratData package
+if (!requireNamespace("remotes")) install.packages("remotes")
+if (!requireNamespace("SeuratData")) install_github('satijalab/seurat-data')
+library(SeuratData)
+library(Seurat)
+InstallData("pbmcsca")
+data("pbmcsca")
+
+# Integrate scRNA-seq datasets generated with different methods/technologies
+pbmcsca <- pbmcsca |> NormalizeData() |> SplitObject(split.by = "Method") |> Run.STACAS() |> RunUMAP(dims = 1:30) 
+
+# Visualize
+DimPlot(pbmcsca, group.by = c("Method","CellType")) 
+```
+
 ### STACAS integration DEMOS
 
 Find a tutorial for `STACAS` in a complete Seurat integration pipeline at: [STACAS demo](https://carmonalab.github.io/STACAS.demo/STACAS.demo.html)
