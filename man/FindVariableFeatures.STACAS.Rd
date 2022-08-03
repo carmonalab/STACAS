@@ -2,9 +2,9 @@
 % Please edit documentation in R/main.R
 \name{FindVariableFeatures.STACAS}
 \alias{FindVariableFeatures.STACAS}
-\title{Find variable features for STACAS}
+\title{FindVariableFeatures.STACAS}
 \usage{
-\method{FindVariableFeatures}{STACAS}(
+FindVariableFeatures.STACAS(
   obj,
   nfeat = 1500,
   genesBlockList = "default",
@@ -17,9 +17,9 @@
 
 \item{nfeat}{Number of top HVG to be returned}
 
-\item{min.exp}{Minimum average normalized expression variable for HVG. If lower, the gene will be excluded}
+\item{min.exp}{Minimum average normalized expression for HVG. If lower, the gene will be excluded}
 
-\item{max.exp}{Maximum average normalized expression variable for HVG. If higher, the gene will be excluded}
+\item{max.exp}{Maximum average normalized expression for HVG. If higher, the gene will be excluded}
 
 \item{genesBlocklist}{Optionally takes a list of vectors of gene names. These genes will be removed from initial HVG set. If set to "default",
 STACAS uses its internal list \code{data("genes.blocklist")}.
@@ -33,5 +33,5 @@ Returns a list of highly variable genes
 \description{
 Select highly variable genes (HVG) from an expression matrix. Genes from a blocklist
 (e.g. cell cycling genes, mitochondrial genes) can be excluded from the list of
-variable genes, as well as genes with very low or very high average expression.
+variable genes, as well as genes with very low or very high average expression
 }

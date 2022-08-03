@@ -258,7 +258,7 @@ SampleTree.STACAS <- function (
   return(sample.tree)
 }
 
-#' Find variable features for STACAS
+#' FindVariableFeatures.STACAS
 #'
 #' Select highly variable genes (HVG) from an expression matrix. Genes from a blocklist
 #' (e.g. cell cycling genes, mitochondrial genes) can be excluded from the list of
@@ -271,8 +271,8 @@ SampleTree.STACAS <- function (
 #'     This is useful to mitigate effect of genes associated with technical artifacts or batch effects
 #'     (e.g. mitochondrial, heat-shock response). 
 #'     If set to `NULL` no genes will be excluded
-#' @param min.exp Minimum average normalized expression variable for HVG. If lower, the gene will be excluded
-#' @param max.exp Maximum average normalized expression variable for HVG. If higher, the gene will be excluded
+#' @param min.exp Minimum average normalized expression for HVG. If lower, the gene will be excluded
+#' @param max.exp Maximum average normalized expression for HVG. If higher, the gene will be excluded
 #' @return Returns a list of highly variable genes
 #' @import Seurat
 #' @export FindVariableFeatures.STACAS
