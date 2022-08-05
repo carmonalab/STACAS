@@ -68,5 +68,5 @@ See also how `STACAS` compares to Seurat for the integration of heterogeneos dat
 Massimo Andreatta, Santiago J Carmona "STACAS: Sub-Type Anchor Correction for Alignment in Seurat to integrate single-cell RNA-seq data", *Bioinformatics* **(2020)** - https://doi.org/10.1093/bioinformatics/btaa755
 
 <p align="center">
-  <img height="60" src="docs/white.sq.png">
+  <img height="60" src="docs/RSticker_STACAS.png">
 </p>
