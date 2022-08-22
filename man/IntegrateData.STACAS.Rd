@@ -7,7 +7,6 @@
 IntegrateData.STACAS(
   anchorset,
   new.assay.name = "integrated",
-  normalization.method = c("LogNormalize", "SCT"),
   features.to.integrate = NULL,
   dims = 1:30,
   k.weight = 100,
@@ -20,8 +19,6 @@ IntegrateData.STACAS(
 \item{anchorset}{A set of anchors calculated using \code{FindAnchors.STACAS} and filtered using \code{FilterAnchors.STACAS}}
 
 \item{new.assay.name}{Assay to store the integrated data}
-
-\item{normalization.method}{How was the data normalized?}
 
 \item{features.to.integrate}{Which genes to include in the corrected integrated space (def. variable genes)}
 
@@ -36,7 +33,7 @@ IntegrateData.STACAS(
 \item{verbose}{Print progress bar and output}
 }
 \value{
-Returns a \code{Seurat} object with a new integrated Assay. If normalization.method = "LogNormalize", the integrated data is returned to the data slot and can be treated as log-normalized, corrected data. If normalization.method = "SCT", the integrated data is returned to the scale.data slot and can be treated as centered, corrected Pearson residuals.
+Returns a \code{Seurat} object with a new integrated Assay, with batch-corrected expression values
 }
 \description{
 Integrate a list of datasets using STACAS anchors. Based on the \code{IntegrateData} function from Seurat.

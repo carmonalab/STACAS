@@ -7,11 +7,9 @@
 FindAnchors.STACAS(
   object.list = NULL,
   assay = NULL,
-  reference = NULL,
   anchor.features = 1000,
   genesBlockList = "default",
   dims = 1:30,
-  normalization.method = c("LogNormalize", "SCT"),
   k.anchor = 5,
   k.score = 30,
   alpha = 0.8,
@@ -31,9 +29,6 @@ and can subsequently be used for Seurat dataset integration.}
 \item{assay}{A vector containing the assay to use for each Seurat object in object.list.
 If not specified, uses the default assay.}
 
-\item{reference}{A vector specifying the (indices of the) objects to be used as a reference during integration.
-If NULL (default), all pairwise anchors are found.}
-
 \item{anchor.features}{Can be either: \itemize{
 \item{A numeric value. This will call \code{FindVariableFeatures.STACAS} to identify \code{anchor.features}
     that are consistently variable across datasets}
@@ -46,8 +41,6 @@ This is useful to mitigate effect of genes associated with technical artifacts o
 (e.g. mitochondrial, heat-shock response).}
 
 \item{dims}{The number of dimensions used for PCA reduction}
-
-\item{normalization.method}{Which normalization method was used to prepare the data - either LogNormalize (default) or SCT}
 
 \item{k.anchor}{The number of neighbors to use for identifying anchors}
 

@@ -4,7 +4,7 @@
 \alias{FindVariableFeatures.STACAS}
 \title{FindVariableFeatures.STACAS}
 \usage{
-FindVariableFeatures.STACAS(
+\method{FindVariableFeatures}{STACAS}(
   obj,
   nfeat = 1500,
   genesBlockList = "default",
