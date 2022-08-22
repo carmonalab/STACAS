@@ -1,7 +1,7 @@
 # STACAS: Sub-Type Anchoring Correction for Alignment in Seurat
 
 <p align="center">
-  <img height="80" src="docs/white.sq.png">
+  <img height="80" src="docs/RSticker_STACAS.png">
 </p>
 
 [STACAS](https://github.com/carmonalab/STACAS) is a method for scRNA-seq integration, specifically designed to align scRNA-seq datasets that are composed of only partially overlapping cell populations or sub-types.
@@ -68,5 +68,5 @@ See also how `STACAS` compares to Seurat for the integration of heterogeneos dat
 Massimo Andreatta, Santiago J Carmona "STACAS: Sub-Type Anchor Correction for Alignment in Seurat to integrate single-cell RNA-seq data", *Bioinformatics* **(2020)** - https://doi.org/10.1093/bioinformatics/btaa755
 
 <p align="center">
-  <img height="60" src="docs/white.sq.png">
+  <img height="60" src="docs/RSticker_STACAS.png">
 </p>
