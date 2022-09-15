@@ -1,4 +1,4 @@
-# STACAS: Sub-Type Anchoring Correction for Alignment in Seurat
+# STACAS: Accurate integration of single-cell transcriptomics data with cell type unbalance
 
 <p align="center">
   <img height="80" src="docs/RSticker_STACAS.png">
