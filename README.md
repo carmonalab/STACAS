@@ -1,4 +1,4 @@
-# STACAS: Accurate integration of single-cell transcriptomics data with cell type unbalance
+# STACAS: Accurate integration of single-cell transcriptomics data with cell type imbalance
 
 <p align="center">
   <img height="80" src="docs/RSticker_STACAS.png">
@@ -7,8 +7,8 @@
 [STACAS](https://github.com/carmonalab/STACAS) is a method for scRNA-seq integration, specifically designed to align scRNA-seq datasets that are composed of only partially overlapping cell populations or sub-types.
 It is based on the [Seurat](https://cran.r-project.org/web/packages/Seurat/index.html) integration framework, and adds the following innovations:
 
-* anchors are down-weighted based on their distance in reciprocal PCA space
-* guide trees for pairwaise integration are constructed based on the 'centrality' of datasets, as measured by the sum of their re-weighted anchor scores
+* Anchors are down-weighted based on their distance in reciprocal PCA space
+* Guide trees for pairwise integration are constructed based on the 'centrality' of datasets, as measured by the sum of their re-weighted anchor scores
 * Prior knowledge, given as cell labels, can be used by the algorithm to remove inconsistent anchors, and perform semi-supervised integration 
 
 ## Package Installation
