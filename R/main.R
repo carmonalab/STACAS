@@ -528,4 +528,103 @@ Run.STACAS <- function (
   return(integrated)
 }
 
+#' Standardize gene symbols
+#'
+#' Converts gene names of a Seurat single-cell object to a dictionary of
+#' standard symbols. This function is useful prior to integration of datasets
+#' from different studies, where gene names may be inconsistent.
+#' 
+#' @param obj A Seurat object
+#' @param EnsemblGeneTable A data frame of gene name mappings. This should have
+#'     the format of \href{https://www.ensembl.org/info/data/biomart/index.html}{Ensembl BioMart tables}
+#'     with fields "Gene.name", "Gene.Synonym" and "Gene stable ID". See also
+#'     the default conversion table in STACAS with \code{data(EnsemblGeneTable)}
+#' @param EnsemblGeneFile If \code{EnsemblGeneTable==NULL}, read a gene mapping
+#'     table from this file
+#'     
+#' @return Returns a Seurat object with standard gene names. Genes not found in
+#'     the standard list are removed. Synonyms are accepted when
+#'     the conversion is not ambiguous.
+#' @import Seurat
+#' @importFrom data.table fread
+#' @export
+
+StandardizeGeneSymbols = function(obj, EnsemblGeneTable=NULL, EnsemblGeneFile=NULL){
+  
+  #If file is given
+  if (is.null(EnsemblGeneTable)) {
+    if (is.null(EnsemblGeneFile)) {
+      stop("Please provide EnsemblID table or file")
+    }
+    EnsemblGeneTable <- fread(EnsemblGeneFile)
+  } 
+  
+  #Translate Ensembl IDs if necessary
+  ens.format <- FALSE
+  genes.in <- rownames(obj)
+  ngenes <- length(genes.in)
+  
+  ens.count <- length(intersect(genes.in, EnsemblGeneTable[["Gene stable ID"]]))
+  gname.count <- length(intersect(genes.in, EnsemblGeneTable[["Gene name"]]))
+  
+  max <- max(ens.count, gname.count)
+  if (max < length(genes.in)/2) {
+    warning("Over 50% of genes in input object not found in reference gene table")
+  }
+  if (ens.count > gname.count) {
+    ens.format <- TRUE
+  }
+  
+  if (ens.count > gname.count) {  #Input object has Ensembl IDs
+    genes.tr <- EnsemblGeneTable[["Gene name"]][match(genes.in, EnsemblGeneTable[["Gene stable ID"]])]
+    names(genes.tr) <- genes.in
+    
+    genes.tr <- genes.tr[!is.na(genes.tr) & genes.tr != ""]
+  } else {
+    genes.tr <- genes.in
+    names(genes.tr) <- genes.in
+  }
+  
+  ###### 1. First match dictionary 
+  geneRef_dict <- EnsemblGeneTable[["Gene name"]]
+  names(geneRef_dict) <- EnsemblGeneTable[["Gene Synonym"]]
+  geneRef_dict <- geneRef_dict[!is.null(names(geneRef_dict))]
+  
+  message(paste("Number of genes in input object:", ngenes))
+  genesAllowList1 <- genes.tr[!is.na(genes.tr) & genes.tr != "" &
+                                genes.tr %in% EnsemblGeneTable[["Gene name"]]] #keep genes with standard Gene.name
+  l <- length(genesAllowList1)
+  
+  message(sprintf("Number of genes with standard symbols: %i (%.2f%%)", l, l/ngenes*100))
+  
+  if (l < ngenes & !ens.format){
+    message(paste("Examples of non-standard Gene.names:"))
+    message(paste(head(genes.tr[ !genes.tr %in% EnsemblGeneTable[["Gene name"]] ])))
+  }
+  
+  ###### 2. Search among synonyms
+  genesAllowList2 <- genes.tr[!genes.tr %in% EnsemblGeneTable[["Gene name"]] & 
+                                genes.tr %in% EnsemblGeneTable[["Gene Synonym"]]] # keep genes with accepted Gene.name synonym
+  genesAllowList2.gn <- geneRef_dict[genesAllowList2] # translate Gene.Synonym to standard Gene.name
+  
+  message(paste("Additional number of genes with accepted Gene name synonym: ",length(genesAllowList2.gn)))
+  
+  #Names of genesAllowList contain IDs in matrix - elements contain the new names
+  genesAllowList <- c(genesAllowList1,genesAllowList2.gn)
+  
+  ###### 3. Check for duplicates
+  is.dup <- duplicated(genesAllowList)
+  genesAllowList <- genesAllowList[!is.dup]
+  message(sprintf("Number of duplicated Gene.name: %i (%.2f%%)", sum(is.dup), sum(is.dup)/ngenes*100))
+  
+  l <- length(genesAllowList)
+  message(sprintf("Final number of genes: %i (%.2f%%)", l, l/ngenes*100))
+  
+  ###### 4. Subset matrix for allowed genes, and translate names
+  rows.select <- rownames(obj@assays$RNA@counts)[rownames(obj@assays$RNA@counts) %in% names(genesAllowList)]
+  obj <- obj[rows.select, ]
+  rownames(obj@assays$RNA@data) <- unname(genesAllowList[rows.select])
+  rownames(obj@assays$RNA@counts) <- unname(genesAllowList[rows.select])
+  return(obj)
+}
 
