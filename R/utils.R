@@ -23,6 +23,8 @@ inconsistent_anchors <- function(anchors, seed=123,
     x <-anchors@object.list[[i]]
     labels <- rbind(labels, data.frame(dataset = i, ncell = 1:ncol(x), label = x@meta.data[,cell.labels]))
   }
+  #Exclude 'Multi' labels
+  labels$label[tolower(labels$label)=='multi'] <- NA
   
   labels[,"dataset_cell"] <- paste0(labels[,"dataset"], "_", labels[,"ncell"])
   
@@ -168,7 +170,6 @@ weighted.Anchors.STACAS <- function(
 
 get.blocklist = function(obj) {
   data("genes.blocklist")
-  unlist(genes.blocklist$Mm)
   
   mm <- intersect(unlist(genes.blocklist$Mm), rownames(obj))
   hs <- intersect(unlist(genes.blocklist$Hs), rownames(obj))

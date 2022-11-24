@@ -1,9 +1,14 @@
 #' Find integration anchors using STACAS
 #'
-#' This function computes anchors between datasets for dataset integration. It is based on the Seurat function
+#' This function computes anchors between datasets for single-cell data integration. It is based on the Seurat function
 #' \code{FindIntegrationAnchors}, but is optimized for integration of heterogenous data sets containing only 
-#' partially overlapping cells subsets. It also returns a measure of distance between candidate anchors, 
-#' which can be used at a later stage for anchor filtering using \code{FilterAnchors.STACAS}
+#' partially overlapping cells subsets. It also computes a measure of distance between candidate anchors (rPCA), 
+#' which is combined with the Seurat's anchor weight by the factor \code{alpha}. Prior knowledge about
+#' cell types can optionally be provided to guide anchor finding.
+#' Give this information in the \code{cell.labels} metadata column. This annotation level, which can be incomplete
+#' (set to NA for cells of unknown type), is used to penalize anchor pairs with inconsistent annotation.
+#' The set of anchors returned by this function can then be passed to \code{IntegrateData.STACAS}
+#' for dataset integration.
 #'
 #' @param object.list A list of Seurat objects. Anchors will be determined between pairs of objects, 
 #' and can subsequently be used for Seurat dataset integration.
@@ -13,11 +18,12 @@
 #'   \item{A numeric value. This will call \code{FindVariableFeatures.STACAS} to identify \code{anchor.features}
 #'       that are consistently variable across datasets}
 #'   \item{A pre-calculated vector of integration features to be used for anchor search.}}
-#' @param genesBlockList  If \code{anchor.features} is numeric, \code{genesBlockList} optionally takes a list of vectors of
-#'     gene names. These genes will be removed from the integration features. If set to "default",
+#' @param genesBlockList  If \code{anchor.features} is numeric, \code{genesBlockList}
+#'     optionally takes a (list of) vectors of gene names. These genes will be
+#'     removed from the integration features. If set to "default",
 #'     STACAS uses its internal list \code{data("genes.blocklist")}.
-#'     This is useful to mitigate effect of genes associated with technical artifacts or batch effects
-#'     (e.g. mitochondrial, heat-shock response).
+#'     This is useful to mitigate effect of genes associated with technical
+#'     artifacts or batch effects (e.g. mitochondrial, heat-shock response).
 #' @param dims The number of dimensions used for PCA reduction
 #' @param k.anchor The number of neighbors to use for identifying anchors
 #' @param k.score The number of neighbors to use for scoring anchors
@@ -90,21 +96,12 @@ FindAnchors.STACAS <- function (
   
   #Calculate anchor genes
   if (is.numeric(anchor.features)) {
-    #Genes to exclude from variable features
-    if (is.null(genesBlockList)) { 
-      genes.block <- NULL #no excluded genes
-    } else if (class(genesBlockList) == "list") {
-      genes.block <- genesBlockList #user-provided list
-    } else {
-      genes.block <- get.blocklist(object.list[[1]])  #default list
-    }
-
     n.this <- anchor.features
     if (verbose) {
       message("Computing ", anchor.features, " integration features")
     }
     object.list <- lapply(object.list, function(x) {
-      FindVariableFeatures.STACAS(x, nfeat = n.this, genesBlockList=genes.block)
+      FindVariableFeatures.STACAS(x, nfeat = n.this, genesBlockList=genesBlockList)
     })
     
     #Combine variable features from multiple samples into single list
@@ -279,15 +276,19 @@ FindVariableFeatures.STACAS <- function(
   
   varfeat <- obj@assays$RNA@var.features
   
-  if (is.null(genesBlockList)) { 
-    genes.block <- NULL #no excluded genes
-  } else if (class(genesBlockList) == "list") {
-    genes.block <- genesBlockList #user-provided list
+  if (is.list(genesBlockList)) {
+    genes.block <- unlist(genesBlockList) #user-provided list
+  } else if (is.vector(genesBlockList)) {
+      if (genesBlockList[1] == "default") {
+        genes.block <- unlist(get.blocklist(obj))  #default list
+      } else {
+        genes.block <- genesBlockList #user-provided vector
+      }
   } else {
-    genes.block <- get.blocklist(obj)  #default list
+    genes.block <- NULL # No excluded genes
   }
   
-  varfeat <- setdiff(varfeat, unlist(genes.block))
+  varfeat <- setdiff(varfeat, genes.block)
   
   #Also remove genes that are very poorly or always expressed (=not really variable genes)
   means <- apply(obj@assays$RNA@data[varfeat,], 1, mean)
@@ -368,8 +369,12 @@ PlotAnchors.STACAS <- function(
 #' IntegrateData.STACAS
 #'
 #' Integrate a list of datasets using STACAS anchors. Based on the \code{IntegrateData} function from Seurat.
+#' This function requires that you have calculated a set of integration anchors using \code{FindAnchors.STACAS}.
+#' To perform semi-supervised integration, run \code{FindAnchors.STACAS} with cell type annotations labels.
+#' Integration anchors with inconsistent cell type will be excluded from integration, providing an
+#' integrated space that is partially guided by prior information.
 #'
-#' @param anchorset A set of anchors calculated using \code{FindAnchors.STACAS} and filtered using \code{FilterAnchors.STACAS}
+#' @param anchorset A set of anchors calculated using \code{FindAnchors.STACAS}
 #' @param new.assay.name Assay to store the integrated data
 #' @param features.to.integrate Which genes to include in the corrected integrated space (def. variable genes)
 #' @param dims Number of dimensions for local anchor weighting

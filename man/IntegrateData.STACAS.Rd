@@ -16,7 +16,7 @@ IntegrateData.STACAS(
 )
 }
 \arguments{
-\item{anchorset}{A set of anchors calculated using \code{FindAnchors.STACAS} and filtered using \code{FilterAnchors.STACAS}}
+\item{anchorset}{A set of anchors calculated using \code{FindAnchors.STACAS}}
 
 \item{new.assay.name}{Assay to store the integrated data}
 
@@ -37,4 +37,8 @@ Returns a \code{Seurat} object with a new integrated Assay, with batch-corrected
 }
 \description{
 Integrate a list of datasets using STACAS anchors. Based on the \code{IntegrateData} function from Seurat.
+This function requires that you have calculated a set of integration anchors using \code{FindAnchors.STACAS}.
+To perform semi-supervised integration, run \code{FindAnchors.STACAS} with cell type annotations labels.
+Integration anchors with inconsistent cell type will be excluded from integration, providing an
+integrated space that is partially guided by prior information.
 }

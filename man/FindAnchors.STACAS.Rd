@@ -34,11 +34,12 @@ If not specified, uses the default assay.}
     that are consistently variable across datasets}
 \item{A pre-calculated vector of integration features to be used for anchor search.}}}
 
-\item{genesBlockList}{If \code{anchor.features} is numeric, \code{genesBlockList} optionally takes a list of vectors of
-gene names. These genes will be removed from the integration features. If set to "default",
+\item{genesBlockList}{If \code{anchor.features} is numeric, \code{genesBlockList}
+optionally takes a (list of) vectors of gene names. These genes will be
+removed from the integration features. If set to "default",
 STACAS uses its internal list \code{data("genes.blocklist")}.
-This is useful to mitigate effect of genes associated with technical artifacts or batch effects
-(e.g. mitochondrial, heat-shock response).}
+This is useful to mitigate effect of genes associated with technical
+artifacts or batch effects (e.g. mitochondrial, heat-shock response).}
 
 \item{dims}{The number of dimensions used for PCA reduction}
 
@@ -69,8 +70,13 @@ To be incremented if required by \code{future.apply}}
 Returns an AnchorSet object, which can be passed to \code{IntegrateData.STACAS}
 }
 \description{
-This function computes anchors between datasets for dataset integration. It is based on the Seurat function
+This function computes anchors between datasets for single-cell data integration. It is based on the Seurat function
 \code{FindIntegrationAnchors}, but is optimized for integration of heterogenous data sets containing only 
-partially overlapping cells subsets. It also returns a measure of distance between candidate anchors, 
-which can be used at a later stage for anchor filtering using \code{FilterAnchors.STACAS}
+partially overlapping cells subsets. It also computes a measure of distance between candidate anchors (rPCA), 
+which is combined with the Seurat's anchor weight by the factor \code{alpha}. Prior knowledge about
+cell types can optionally be provided to guide anchor finding.
+Give this information in the \code{cell.labels} metadata column. This annotation level, which can be incomplete
+(set to NA for cells of unknown type), is used to penalize anchor pairs with inconsistent annotation.
+The set of anchors returned by this function can then be passed to \code{IntegrateData.STACAS}
+for dataset integration.
 }
