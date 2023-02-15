@@ -551,6 +551,7 @@ Run.STACAS <- function (
 #'     the standard list are removed. Synonyms are accepted when
 #'     the conversion is not ambiguous.
 #' @import Seurat
+#' @import R.utils
 #' @importFrom data.table fread
 #' @export
 
