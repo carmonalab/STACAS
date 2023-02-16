@@ -420,6 +420,14 @@ IntegrateData.STACAS <- function(
       )
     )
   }
+  # default integration tree
+  if (is.null(sample.tree)) {
+    sample.tree <- SampleTree.STACAS(
+      anchorset = anchorset,
+      semisupervised = semisupervised,
+      plot = FALSE
+    )
+  }
   # perform pairwise integration
   reference.integrated <- PairwiseIntegrateReference.STACAS(
     anchorset = anchorset,

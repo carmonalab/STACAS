@@ -1072,7 +1072,6 @@ PairwiseIntegrateReference.STACAS <- function(
   if (is.null(x = sample.tree)) {
     sample.tree <- SampleTree.STACAS(
       anchorset = anchorset,
-      hclust.method = "average",
       plot = FALSE
     )
   }
