@@ -404,7 +404,7 @@ IntegrateData.STACAS <- function(
     sample.tree <- SampleTree.STACAS(
       anchorset = anchorset,
       semisupervised = semisupervised,
-      hclust.method = hclust.method,
+      hclust.method = hclust.method[1],
       plot = FALSE
     )
   }
@@ -533,7 +533,7 @@ Run.STACAS <- function (
   tree <- SampleTree.STACAS(
     anchorset = stacas_anchors,
     semisupervised = semisupervised,
-    hclust.method = hclust.method,
+    hclust.method = hclust.method[1],
     plot = FALSE
   )
   
