@@ -18,6 +18,7 @@ Run.STACAS(
   correction.scale = 2,
   cell.labels = NULL,
   label.confidence = 1,
+  hclust.method = NULL,
   seed = 123,
   verbose = FALSE
 )
@@ -59,6 +60,8 @@ for semi-supervised alignment (optional). Cells annotated as NA or NULL will not
 alignment}
 
 \item{label.confidence}{How much you trust the provided cell labels (from 0 to 1).}
+
+\item{hclust.method}{Clustering method for integration tree (single, complete, average, ward)}
 
 \item{seed}{Random seed for probabilistic anchor acceptance}
 
