@@ -11,6 +11,7 @@ IntegrateData.STACAS(
   dims = 1:30,
   k.weight = 100,
   sample.tree = NULL,
+  hclust.method = NULL,
   semisupervised = TRUE,
   verbose = TRUE
 )
@@ -27,6 +28,8 @@ IntegrateData.STACAS(
 \item{k.weight}{Number of neighbors for local anchor weighting. Set \code{k.weight="max"} to disable local weighting}
 
 \item{sample.tree}{Specify the order of integration. See \code{SampleTree.STACAS} to calculate an integration tree.}
+
+\item{hclust.method}{Clustering method for integration tree (single, complete, average, ward)}
 
 \item{semisupervised}{Whether to use cell type label information (if available)}
 

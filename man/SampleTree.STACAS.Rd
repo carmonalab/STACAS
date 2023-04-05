@@ -7,7 +7,7 @@
 SampleTree.STACAS(
   anchorset,
   obj.names = NULL,
-  hclust.method = c("ward.D2", "average", "single", "complete"),
+  hclust.method = c("single", "complete", "ward.D2", "average"),
   usecol = c("score", "dist.mean"),
   method = c("weight.sum", "counts"),
   semisupervised = TRUE,
@@ -19,7 +19,7 @@ SampleTree.STACAS(
 
 \item{obj.names}{Option vector of names for objects in anchorset}
 
-\item{hclust.method}{Clustering method to be used (complete, average, single, ward)}
+\item{hclust.method}{Clustering method to be used (single, complete, average, ward)}
 
 \item{usecol}{Column name to be used to compute sample similarity. Default "score"}
 

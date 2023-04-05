@@ -152,7 +152,7 @@ FindAnchors.STACAS <- function (
 #' Build an integration tree by clustering samples in a hierarchical manner. Cumulative scoring among anchor pairs will be used as pairwise similarity criteria of samples.
 #' 
 #' @param anchorset Scored anchorsobtained from \code{FindAnchors.STACAS} and \code{FilterAnchors.STACAS} function
-#' @param hclust.method Clustering method to be used (complete, average, single, ward) 
+#' @param hclust.method Clustering method to be used (single, complete, average, ward) 
 #' @param usecol Column name to be used to compute sample similarity. Default "score"
 #' @param obj.names Option vector of names for objects in anchorset
 #' @param method Aggregation method to be used among anchors for sample similarity computation. Default: weight.sum
@@ -166,7 +166,7 @@ FindAnchors.STACAS <- function (
 SampleTree.STACAS <- function (
     anchorset,
     obj.names = NULL,
-    hclust.method = c("ward.D2","average","single","complete"),
+    hclust.method = c("single","complete","ward.D2","average"),
     usecol = c("score","dist.mean"),
     method = c("weight.sum","counts"),
     semisupervised = TRUE,
@@ -175,7 +175,7 @@ SampleTree.STACAS <- function (
   
   hclust.method <- hclust.method[1]
   method <- method[1]
-  usecol = usecol[1]
+  usecol <- usecol[1]
   
   object.list <- slot(object = anchorset, name = "object.list")
   reference.objects <- slot(object = anchorset, name = "reference.objects")
@@ -380,6 +380,7 @@ PlotAnchors.STACAS <- function(
 #' @param dims Number of dimensions for local anchor weighting
 #' @param k.weight Number of neighbors for local anchor weighting. Set \code{k.weight="max"} to disable local weighting
 #' @param sample.tree Specify the order of integration. See \code{SampleTree.STACAS} to calculate an integration tree.
+#' @param hclust.method Clustering method for integration tree (single, complete, average, ward) 
 #' @param semisupervised Whether to use cell type label information (if available)
 #' @param verbose Print progress bar and output
 #' @return Returns a \code{Seurat} object with a new integrated Assay, with batch-corrected expression values
@@ -393,10 +394,21 @@ IntegrateData.STACAS <- function(
     dims = 1:30,
     k.weight = 100,
     sample.tree = NULL,
+    hclust.method = NULL,
     semisupervised = TRUE,
     verbose = TRUE
 ) {
 
+  # default integration tree
+  if (is.null(sample.tree)) {
+    sample.tree <- SampleTree.STACAS(
+      anchorset = anchorset,
+      semisupervised = semisupervised,
+      hclust.method = hclust.method,
+      plot = FALSE
+    )
+  }
+  
   if (semisupervised & "Retain_ss" %in% colnames(anchorset@anchors)) {
     anchorset@anchors <- anchorset@anchors[anchorset@anchors$Retain_ss==TRUE,]
   }
@@ -420,14 +432,7 @@ IntegrateData.STACAS <- function(
       )
     )
   }
-  # default integration tree
-  if (is.null(sample.tree)) {
-    sample.tree <- SampleTree.STACAS(
-      anchorset = anchorset,
-      semisupervised = semisupervised,
-      plot = FALSE
-    )
-  }
+ 
   # perform pairwise integration
   reference.integrated <- PairwiseIntegrateReference.STACAS(
     anchorset = anchorset,
