@@ -394,7 +394,7 @@ IntegrateData.STACAS <- function(
     dims = 1:30,
     k.weight = 100,
     sample.tree = NULL,
-    hclust.method = NULL,
+    hclust.method = c("single","complete","ward.D2","average"),
     semisupervised = TRUE,
     verbose = TRUE
 ) {
@@ -508,7 +508,7 @@ Run.STACAS <- function (
     correction.scale = 2,  
     cell.labels = NULL,
     label.confidence = 1,
-    hclust.method = NULL,
+    hclust.method = c("single","complete","ward.D2","average"),
     seed = 123,
     verbose = FALSE
 ) {
