@@ -42,7 +42,6 @@
 #' @return Returns an AnchorSet object, which can be passed to \code{IntegrateData.STACAS}
 #' @import Seurat
 #' @importFrom future nbrOfWorkers
-#' @importFrom future.apply future_lapply
 #' @importFrom pbapply pblapply
 #' @export
 
@@ -61,7 +60,7 @@ FindAnchors.STACAS <- function (
   label.confidence = 1,
   future.maxSize = 16,
   seed = 123,
-  verbose = FALSE
+  verbose = TRUE
 ) {
   
   if (label.confidence<0 | label.confidence>1) {
@@ -92,14 +91,14 @@ FindAnchors.STACAS <- function (
     assay <- sapply(X = object.list, FUN = DefaultAssay)
   }
 
-  genes.conserved <- check.genes(object.list)
-  
   #Calculate anchor genes
   if (is.numeric(anchor.features)) {
     n.this <- anchor.features
     if (verbose) {
       message("Computing ", anchor.features, " integration features")
     }
+    check.genes(object.list)
+    
     object.list <- lapply(object.list, function(x) {
       FindVariableFeatures.STACAS(x, nfeat = n.this, genesBlockList=genesBlockList)
     })
@@ -118,11 +117,15 @@ FindAnchors.STACAS <- function (
     object.list[[i]] <- ScaleData(object.list[[i]], assay=assay[i], model.use="linear",
                                   do.center=FALSE, do.scale=FALSE,
                                   features = anchor.features, verbose=FALSE)
-    cat(paste0(" ",i,"/",length(object.list)))
+    if (verbose) {
+      cat(paste0(" ",i,"/",length(object.list)))
+    }
     object.list[[i]] <- RunPCA(object.list[[i]], features = anchor.features,
                                ndims.print = NA, nfeatures.print = NA, verbose=FALSE)
   }
-  cat("\nFinding integration anchors...\n")
+  if (verbose) {
+    cat("\nFinding integration anchors...\n")
+  }
   
   #Find pairwise anchors and keep distance information
   ref.anchors <- FindIntegrationAnchors.wdist(object.list, dims = dims, k.anchor = k.anchor,

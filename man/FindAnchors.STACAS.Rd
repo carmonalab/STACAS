@@ -19,7 +19,7 @@ FindAnchors.STACAS(
   label.confidence = 1,
   future.maxSize = 16,
   seed = 123,
-  verbose = FALSE
+  verbose = TRUE
 )
 }
 \arguments{

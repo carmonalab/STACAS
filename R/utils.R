@@ -261,11 +261,7 @@ FindIntegrationAnchors.wdist <- function(
   reduction <- "pca"
   nn.method = "rann"
   eps = 0
-  my.lapply <- ifelse(
-    test = verbose && future::nbrOfWorkers() == 1,
-    yes = pbapply::pblapply,
-    no = future.apply::future_lapply
-  )
+  
   object.ncells <- sapply(X = object.list, FUN = function(x) dim(x = x)[2])
   if (any(object.ncells <= max(dims))) {
     bad.obs <- which(x = object.ncells <= max(dims))
@@ -309,7 +305,7 @@ FindIntegrationAnchors.wdist <- function(
     if (verbose) {
       message("Scaling features for provided objects")
     }
-    object.list <- my.lapply(
+    object.list <- pbapply::pblapply(
       X = object.list,
       FUN = function(object) {
         ScaleData(object = object, features = anchor.features, verbose = FALSE)
@@ -326,7 +322,7 @@ FindIntegrationAnchors.wdist <- function(
       message("Computing within dataset neighborhoods")
     }
     k.neighbor <- max(k.anchor, k.score)
-    internal.neighbors <- my.lapply(
+    internal.neighbors <- pbapply::pblapply(
       X = 1:length(x = object.list),
       FUN = function(x) {
         Seurat:::NNHelper(
@@ -365,7 +361,7 @@ FindIntegrationAnchors.wdist <- function(
   }
   # determine all anchors
   plot.list=list()
-  all.anchors <- my.lapply(
+  all.anchors <- pbapply::pblapply(
     X = 1:nrow(x = combinations),
     FUN = function(row) {
       i <- combinations[row, 1]

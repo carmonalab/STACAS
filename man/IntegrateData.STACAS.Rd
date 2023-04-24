@@ -11,7 +11,7 @@ IntegrateData.STACAS(
   dims = 1:30,
   k.weight = 100,
   sample.tree = NULL,
-  hclust.method = NULL,
+  hclust.method = c("single", "complete", "ward.D2", "average"),
   semisupervised = TRUE,
   verbose = TRUE
 )

@@ -18,7 +18,7 @@ Run.STACAS(
   correction.scale = 2,
   cell.labels = NULL,
   label.confidence = 1,
-  hclust.method = NULL,
+  hclust.method = c("single", "complete", "ward.D2", "average"),
   seed = 123,
   verbose = FALSE
 )
