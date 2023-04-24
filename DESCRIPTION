@@ -18,8 +18,6 @@ biocViews:
 Depends: R (>= 4.0.0)
 Imports:
     Seurat(>= 4.0.0),
-    future,
-    future.apply,
     pbapply,
     ggridges,
     R.utils,

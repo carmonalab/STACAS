@@ -34,14 +34,11 @@
 #' for semi-supervised alignment (optional). Cells annotated as NA or NULL will not be penalized in semi-supervised
 #' alignment
 #' @param label.confidence How much you trust the provided cell labels (from 0 to 1).
-#' @param future.maxSize For multi-core functionality, maximum allowed total size (in Gb) of global variables.
-#'      To be incremented if required by \code{future.apply}
 #' @param seed Random seed for probabilistic anchor acceptance
 #' @param verbose Print all output
 #' 
 #' @return Returns an AnchorSet object, which can be passed to \code{IntegrateData.STACAS}
 #' @import Seurat
-#' @importFrom future nbrOfWorkers
 #' @importFrom pbapply pblapply
 #' @export
 
@@ -58,7 +55,6 @@ FindAnchors.STACAS <- function (
   correction.scale = 2,  
   cell.labels = NULL,
   label.confidence = 1,
-  future.maxSize = 16,
   seed = 123,
   verbose = TRUE
 ) {
@@ -72,8 +68,6 @@ FindAnchors.STACAS <- function (
   if (alpha<0 | alpha>1) {
     stop("alpha must be a number between 0 and 1")
   }
-  
-  options(future.globals.maxSize= future.maxSize*1000*1024^2)
   
   #default assay, or user-defined assay
   if (!is.null(assay)) {

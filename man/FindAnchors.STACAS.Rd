@@ -17,7 +17,6 @@ FindAnchors.STACAS(
   correction.scale = 2,
   cell.labels = NULL,
   label.confidence = 1,
-  future.maxSize = 16,
   seed = 123,
   verbose = TRUE
 )
@@ -58,9 +57,6 @@ for semi-supervised alignment (optional). Cells annotated as NA or NULL will not
 alignment}
 
 \item{label.confidence}{How much you trust the provided cell labels (from 0 to 1).}
-
-\item{future.maxSize}{For multi-core functionality, maximum allowed total size (in Gb) of global variables.
-To be incremented if required by \code{future.apply}}
 
 \item{seed}{Random seed for probabilistic anchor acceptance}
 
