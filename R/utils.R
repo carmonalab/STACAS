@@ -21,10 +21,9 @@ inconsistent_anchors <- function(anchors, seed=123,
   labels <- data.frame()
   for(i in anchors@reference.objects){
     x <-anchors@object.list[[i]]
-    labels <- rbind(labels, data.frame(dataset = i, ncell = 1:ncol(x), label = x@meta.data[,cell.labels]))
+    labels <- rbind(labels, data.frame(dataset = i, ncell = 1:ncol(x),
+                                       label = as.character(x@meta.data[,cell.labels])))
   }
-  #Exclude 'Multi' labels
-  labels$label[tolower(labels$label)=='multi'] <- NA
   
   labels[,"dataset_cell"] <- paste0(labels[,"dataset"], "_", labels[,"ncell"])
   
@@ -33,6 +32,10 @@ inconsistent_anchors <- function(anchors, seed=123,
   labels[nas, "label"] <- "unknown"
   nas <- labels[, "label"] == "NaN"
   labels[nas, "label"] <- "unknown"
+  
+  #Exclude 'Multi' labels
+  multis <- tolower(labels[, "label"]) == "multi"
+  labels[multis, "label"] <- "unknown"
   
   df <- anchors@anchors
   df[,"dataset1_cell1"] <- paste0(df[,"dataset1"], "_", df[,"cell1"])
