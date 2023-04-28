@@ -28,7 +28,10 @@ inconsistent_anchors <- function(anchors, seed=123,
   
   labels[,"dataset_cell"] <- paste0(labels[,"dataset"], "_", labels[,"ncell"])
   
-  nas <- is.na(labels[,"label"]) | (labels[, "label"]== "NaN") | is.null(labels[, "label"])
+  #Convert NAs to 'unknown'
+  nas <- is.na(labels[,"label"])
+  labels[nas, "label"] <- "unknown"
+  nas <- labels[, "label"] == "NaN"
   labels[nas, "label"] <- "unknown"
   
   df <- anchors@anchors

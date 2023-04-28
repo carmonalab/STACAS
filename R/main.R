@@ -31,8 +31,9 @@
 #' @param anchor.coverage Center of logistic function, based on quantile value of rPCA distance distribution
 #' @param correction.scale Scale factor for logistic function (multiplied by SD of rPCA distance distribution)
 #' @param cell.labels A metadata column name, storing cell type annotations. These will be taken into account
-#' for semi-supervised alignment (optional). Cells annotated as NA or NULL will not be penalized in semi-supervised
-#' alignment
+#' for semi-supervised alignment (optional). Note that not all cells need to be annotated - please set
+#' unannotated cells as NA or 'unknown' for this column. Cells with NA or 'unknown' cell labels will not be
+#' penalized in semi-supervised alignment.
 #' @param label.confidence How much you trust the provided cell labels (from 0 to 1).
 #' @param seed Random seed for probabilistic anchor acceptance
 #' @param verbose Print all output
