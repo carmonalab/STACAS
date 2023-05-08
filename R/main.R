@@ -124,8 +124,8 @@ FindAnchors.STACAS <- function (
     if (verbose) {
       cat(paste0(" ",i,"/",length(object.list)))
     }
-    object.list[[i]] <- RunPCA(object.list[[i]], features = anchor.features, npcs=dims,
-                               ndims.print = NA, nfeatures.print = NA, verbose=FALSE)
+    object.list[[i]] <- suppressWarnings(RunPCA(object.list[[i]], features = anchor.features,
+                               ndims.print = NA, nfeatures.print = NA, verbose=FALSE))
   }
   if (verbose) {
     cat("\nFinding integration anchors...\n")
