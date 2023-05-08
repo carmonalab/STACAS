@@ -48,7 +48,7 @@ FindAnchors.STACAS <- function (
   assay = NULL,
   anchor.features = 1000,
   genesBlockList = "default",
-  dims = 1:30,
+  dims = 30,
   k.anchor = 5,
   k.score = 30,
   alpha=0.8,
@@ -68,6 +68,15 @@ FindAnchors.STACAS <- function (
   }
   if (alpha<0 | alpha>1) {
     stop("alpha must be a number between 0 and 1")
+  }
+  
+  if (length(dims)==1 & is.numeric(dims)) {
+    dims.vec <- 1:dims
+  } else if (is.numeric(dims)) {
+    dims.vec <- dims
+    dims <- max(dims)
+  } else {
+    stop("unsupported type for 'dims' parameter")
   }
   
   #default assay, or user-defined assay
@@ -115,7 +124,7 @@ FindAnchors.STACAS <- function (
     if (verbose) {
       cat(paste0(" ",i,"/",length(object.list)))
     }
-    object.list[[i]] <- RunPCA(object.list[[i]], features = anchor.features,
+    object.list[[i]] <- RunPCA(object.list[[i]], features = anchor.features, npcs=dims,
                                ndims.print = NA, nfeatures.print = NA, verbose=FALSE)
   }
   if (verbose) {
@@ -123,7 +132,7 @@ FindAnchors.STACAS <- function (
   }
   
   #Find pairwise anchors and keep distance information
-  ref.anchors <- FindIntegrationAnchors.wdist(object.list, dims = dims, k.anchor = k.anchor,
+  ref.anchors <- FindIntegrationAnchors.wdist(object.list, dims = dims.vec, k.anchor = k.anchor,
                                               anchor.features=anchor.features,
                                               assay=assay, k.score=k.score, verbose=verbose)
   
@@ -389,13 +398,22 @@ IntegrateData.STACAS <- function(
     anchorset,
     new.assay.name = "integrated",
     features.to.integrate = NULL,
-    dims = 1:30,
+    dims = 30,
     k.weight = 100,
     sample.tree = NULL,
     hclust.method = c("single","complete","ward.D2","average"),
     semisupervised = TRUE,
     verbose = TRUE
 ) {
+  
+  if (length(dims)==1 & is.numeric(dims)) {
+    dims.vec <- 1:dims
+  } else if (is.numeric(dims)) {
+    dims.vec <- dims
+    dims <- max(dims)
+  } else {
+    stop("unsupported type for 'dims' parameter")
+  }
 
   # default integration tree
   if (is.null(sample.tree)) {
@@ -437,7 +455,7 @@ IntegrateData.STACAS <- function(
     new.assay.name = new.assay.name,
     features = features,
     features.to.integrate = features.to.integrate,
-    dims = dims,
+    dims = dims.vec,
     k.weight = k.weight,
     sample.tree = sample.tree,
     preserve.order = TRUE,
@@ -497,7 +515,7 @@ Run.STACAS <- function (
     assay = NULL,
     anchor.features = 1000,
     genesBlockList = "default",
-    dims = 1:30,
+    dims = 30,
     k.anchor = 5,
     k.score = 30,
     k.weight = 100,
@@ -510,6 +528,15 @@ Run.STACAS <- function (
     seed = 123,
     verbose = FALSE
 ) {
+  
+  if (length(dims)==1 & is.numeric(dims)) {
+    dims.vec <- 1:dims
+  } else if (is.numeric(dims)) {
+    dims.vec <- dims
+    dims <- max(dims)
+  } else {
+    stop("unsupported type for 'dims' parameter")
+  }
   
   # 1. Find anchors
   stacas_anchors <- FindAnchors.STACAS(object.list, assay=assay,
@@ -542,7 +569,7 @@ Run.STACAS <- function (
   
   # 4. Calculate batch-corrected PCA space
   integrated <- ScaleData(integrated)
-  integrated <- RunPCA(integrated, npcs=max(dims))
+  integrated <- RunPCA(integrated, npcs=dims)
   
   return(integrated)
 }

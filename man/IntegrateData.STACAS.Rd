@@ -8,7 +8,7 @@ IntegrateData.STACAS(
   anchorset,
   new.assay.name = "integrated",
   features.to.integrate = NULL,
-  dims = 1:30,
+  dims = 30,
   k.weight = 100,
   sample.tree = NULL,
   hclust.method = c("single", "complete", "ward.D2", "average"),

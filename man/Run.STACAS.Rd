@@ -9,7 +9,7 @@ Run.STACAS(
   assay = NULL,
   anchor.features = 1000,
   genesBlockList = "default",
-  dims = 1:30,
+  dims = 30,
   k.anchor = 5,
   k.score = 30,
   k.weight = 100,

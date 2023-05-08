@@ -366,12 +366,12 @@ FindIntegrationAnchors.wdist <- function(
     }
   }
   # determine all anchors
-  plot.list=list()
   all.anchors <- pbapply::pblapply(
     X = 1:nrow(x = combinations),
     FUN = function(row) {
       i <- combinations[row, 1]
       j <- combinations[row, 2]
+      suppressWarnings(
       object.1 <- DietSeurat(
         object = object.list[[i]],
         assays = assay[i],
@@ -379,7 +379,8 @@ FindIntegrationAnchors.wdist <- function(
         counts = FALSE,
         scale.data = TRUE,
         dimreducs = reduction
-      )
+      ))
+      suppressWarnings(
       object.2 <- DietSeurat(
         object = object.list[[j]],
         assays = assay[j],
@@ -387,7 +388,7 @@ FindIntegrationAnchors.wdist <- function(
         counts = FALSE,
         scale.data = TRUE,
         dimreducs = reduction
-      )
+      ))
       # suppress key duplication warning
       suppressWarnings(object.1[["ToIntegrate"]] <- object.1[[assay[i]]])
       DefaultAssay(object = object.1) <- "ToIntegrate"
@@ -401,83 +402,54 @@ FindIntegrationAnchors.wdist <- function(
         slot(object = object.2[[reduction]], name = "assay.used") <- "ToIntegrate"
       }
       object.2 <- DietSeurat(object = object.2, assays = "ToIntegrate", scale.data = TRUE, dimreducs = reduction)
-      object.pair <- switch(
-        EXPR = reduction,
-        'cca' = {
-          object.pair <- RunCCA(
-            object1 = object.1,
-            object2 = object.2,
-            assay1 = "ToIntegrate",
-            assay2 = "ToIntegrate",
-            features = anchor.features,
-            num.cc = max(dims),
-            renormalize = FALSE,
-            rescale = FALSE,
-            verbose = verbose
-          )
-          if (l2.norm){
-            object.pair <- L2Dim(object = object.pair, reduction = reduction)
-            reduction <- paste0(reduction, ".l2")
-            nn.reduction <- reduction
-          }
-          reduction.2 <- character()
-          object.pair
-        },
-        'pca' = {
-          common.features <- intersect(
-            x = rownames(x = Loadings(object = object.1[["pca"]])),
-            y = rownames(x = Loadings(object = object.2[["pca"]]))
-          )
-          object.pair <- merge(x = object.1, y = object.2, merge.data = TRUE)
-          
-          projected.embeddings.1<- t(x = GetAssayData(object = object.1, slot = "scale.data")[common.features, ]) %*%
-            Loadings(object = object.2[["pca"]])[common.features, ]
-          
-          object.pair[['projectedpca.1']] <- CreateDimReducObject(
-            embeddings = rbind(projected.embeddings.1, Embeddings(object = object.2[["pca"]])),
-            assay = DefaultAssay(object = object.1),
-            key = "projectedpca1_"
-          )
-          projected.embeddings.2 <- t(x = GetAssayData(object = object.2, slot = "scale.data")[common.features, ]) %*%
-            Loadings(object = object.1[["pca"]])[common.features, ]
-          object.pair[['projectedpca.2']] <- CreateDimReducObject(
-            embeddings = rbind(projected.embeddings.2, Embeddings(object = object.1[["pca"]])),
-            assay = DefaultAssay(object = object.2),
-            key = "projectedpca2_"
-          )
-          object.pair[["pca"]] <- CreateDimReducObject(
-            embeddings = rbind(
-              Embeddings(object = object.1[["pca"]]),
-              Embeddings(object = object.2[["pca"]])),
-            assay = DefaultAssay(object = object.1),
-            key = "pca_"
-          )
-          
-          reduction <- "projectedpca.1"
-          reduction.2 <- "projectedpca.2"
-          if (l2.norm){
-            slot(object = object.pair[["projectedpca.1"]], name = "cell.embeddings") <- Sweep(
-              x = Embeddings(object = object.pair[["projectedpca.1"]]),
-              MARGIN = 2,
-              STATS = apply(X = Embeddings(object = object.pair[["projectedpca.1"]]), MARGIN = 2, FUN = sd),
-              FUN = "/"
-            )
-            slot(object = object.pair[["projectedpca.2"]], name = "cell.embeddings") <- Sweep(
-              x = Embeddings(object = object.pair[["projectedpca.2"]]),
-              MARGIN = 2,
-              STATS = apply(X = Embeddings(object = object.pair[["projectedpca.2"]]), MARGIN = 2, FUN = sd),
-              FUN = "/"
-            )
-            object.pair <- L2Dim(object = object.pair, reduction = "projectedpca.1")
-            object.pair <- L2Dim(object = object.pair, reduction = "projectedpca.2")
-            reduction <- paste0(reduction, ".l2")
-            reduction.2 <- paste0(reduction.2, ".l2")
-          }
-          object.pair
-        },
-        stop("Invalid reduction parameter. Please choose either cca or rpca")
+
+      common.features <- intersect(
+        x = rownames(x = Loadings(object = object.1[["pca"]])),
+        y = rownames(x = Loadings(object = object.2[["pca"]]))
+      )
+      object.pair <- merge(x = object.1, y = object.2, merge.data = TRUE)
+      
+      projected.embeddings.1<- t(x = GetAssayData(object = object.1, slot = "scale.data")[common.features, ]) %*%
+        Loadings(object = object.2[["pca"]])[common.features, ]
+      
+      object.pair[['projectedpca.1']] <- CreateDimReducObject(
+        embeddings = rbind(projected.embeddings.1, Embeddings(object = object.2[["pca"]])),
+        assay = DefaultAssay(object = object.1),
+        key = "projectedpca1_"
+      )
+      projected.embeddings.2 <- t(x = GetAssayData(object = object.2, slot = "scale.data")[common.features, ]) %*%
+        Loadings(object = object.1[["pca"]])[common.features, ]
+      object.pair[['projectedpca.2']] <- CreateDimReducObject(
+        embeddings = rbind(projected.embeddings.2, Embeddings(object = object.1[["pca"]])),
+        assay = DefaultAssay(object = object.2),
+        key = "projectedpca2_"
+      )
+      object.pair[["pca"]] <- CreateDimReducObject(
+        embeddings = rbind(
+          Embeddings(object = object.1[["pca"]]),
+          Embeddings(object = object.2[["pca"]])),
+        assay = DefaultAssay(object = object.1),
+        key = "pca_"
       )
       
+      slot(object = object.pair[["projectedpca.1"]], name = "cell.embeddings") <- Sweep(
+        x = Embeddings(object = object.pair[["projectedpca.1"]]),
+        MARGIN = 2,
+        STATS = apply(X = Embeddings(object = object.pair[["projectedpca.1"]]), MARGIN = 2, FUN = sd),
+        FUN = "/"
+      )
+      slot(object = object.pair[["projectedpca.2"]], name = "cell.embeddings") <- Sweep(
+        x = Embeddings(object = object.pair[["projectedpca.2"]]),
+        MARGIN = 2,
+        STATS = apply(X = Embeddings(object = object.pair[["projectedpca.2"]]), MARGIN = 2, FUN = sd),
+        FUN = "/"
+      )
+      object.pair <- L2Dim(object = object.pair, reduction = "projectedpca.1")
+      object.pair <- L2Dim(object = object.pair, reduction = "projectedpca.2")
+      
+      reduction <- "projectedpca.1.l2"
+      reduction.2 <- "projectedpca.2.l2"
+
       internal.neighbors <- internal.neighbors[c(i, j)]
       
       anchors <- FindAnchors.wdist(
@@ -1178,19 +1150,16 @@ PairwiseIntegrateReference.STACAS <- function(
     slot = 'data'
   )
   integrated.data <- integrated.data[, colnames(x = unintegrated)]
-  new.assay <- new(
-    Class = 'Assay',
-    counts =  new(Class = "dgCMatrix"),
-    data = integrated.data,
-    scale.data = matrix(),
-    var.features = vector(),
-    meta.features = data.frame(row.names = rownames(x = integrated.data)),
-    misc = NULL
-  )
-  unintegrated[[new.assay.name]] <- new.assay
+ 
+  unintegrated[[new.assay.name]] <- CreateAssayObject(data = integrated.data,
+                                    scale.data = matrix(),
+                                    var.features = vector(),
+                                    meta.features = data.frame(row.names = rownames(x = integrated.data)),
+                                    misc = NULL)
+  
   # "unintegrated" now contains the integrated assay
-  DefaultAssay(object = unintegrated) <- new.assay.name
-  VariableFeatures(object = unintegrated) <- features
+  DefaultAssay(unintegrated) <- new.assay.name
+  VariableFeatures(unintegrated) <- features
   
   unintegrated <- SetIntegrationData(
     object = unintegrated,
