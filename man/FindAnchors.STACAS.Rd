@@ -7,6 +7,7 @@
 FindAnchors.STACAS(
   object.list = NULL,
   assay = NULL,
+  reference = NULL,
   anchor.features = 1000,
   genesBlockList = "default",
   dims = 30,
@@ -27,6 +28,14 @@ and can subsequently be used for Seurat dataset integration.}
 
 \item{assay}{A vector containing the assay to use for each Seurat object in object.list.
 If not specified, uses the default assay.}
+
+\item{reference}{A vector specifying the object/s to be used as a reference
+during integration. If NULL (default), all pairwise anchors are found (no
+reference/s). If not NULL, the corresponding objects in \code{object.list}
+will be used as references. When using a set of specified references, anchors
+are first found between each query and each reference. The references are
+then integrated through pairwise integration. Each query is then mapped to
+the integrated reference.}
 
 \item{anchor.features}{Can be either: \itemize{
 \item{A numeric value. This will call \code{FindVariableFeatures.STACAS} to identify \code{anchor.features}

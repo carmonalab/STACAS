@@ -14,6 +14,13 @@
 #' and can subsequently be used for Seurat dataset integration.
 #' @param assay A vector containing the assay to use for each Seurat object in object.list.
 #' If not specified, uses the default assay.
+#' @param reference A vector specifying the object/s to be used as a reference
+#' during integration. If NULL (default), all pairwise anchors are found (no
+#' reference/s). If not NULL, the corresponding objects in \code{object.list}
+#' will be used as references. When using a set of specified references, anchors
+#' are first found between each query and each reference. The references are
+#' then integrated through pairwise integration. Each query is then mapped to
+#' the integrated reference.
 #' @param anchor.features Can be either: \itemize{
 #'   \item{A numeric value. This will call \code{FindVariableFeatures.STACAS} to identify \code{anchor.features}
 #'       that are consistently variable across datasets}
@@ -46,6 +53,7 @@
 FindAnchors.STACAS <- function (
   object.list = NULL,
   assay = NULL,
+  reference = NULL,
   anchor.features = 1000,
   genesBlockList = "default",
   dims = 30,
@@ -134,6 +142,7 @@ FindAnchors.STACAS <- function (
   #Find pairwise anchors and keep distance information
   ref.anchors <- FindIntegrationAnchors.wdist(object.list, dims = dims.vec, k.anchor = k.anchor,
                                               anchor.features=anchor.features,
+                                              reference = reference,
                                               assay=assay, k.score=k.score, verbose=verbose)
   
   #store Seurat knn consistency score
@@ -190,6 +199,11 @@ SampleTree.STACAS <- function (
   objects.ncell <- sapply(X = object.list, FUN = ncol)
   offsets <- slot(object = anchorset, name = "offsets")
   
+  #Single reference
+  if (length(reference.objects) == 1) {
+    return(reference.objects)
+  }
+  
   if (semisupervised & "Retain_ss" %in% colnames(anchors)) {
     anchors <- anchors[anchors$Retain_ss==TRUE,]
   }
@@ -206,13 +220,15 @@ SampleTree.STACAS <- function (
   similarity.matrix <- similarity.matrix[reference.objects, reference.objects]
   similarity.matrix <- similarity.matrix+10^-6 #avoid 1/0
   
-  if (!is.null(obj.names)) { 
-    rownames(similarity.matrix) <- obj.names
-    colnames(similarity.matrix) <- obj.names
+  names <- obj.names[reference.objects]
+  
+  if (!is.null(names)) { 
+    rownames(similarity.matrix) <- names
+    colnames(similarity.matrix) <- names
   }
   distance.matrix <- as.dist(m = 1 - similarity.matrix)
   
-  if(plot){
+  if(plot & length(reference.objects)>2) {
     plot(hclust(d = distance.matrix,method = hclust.method))
   }
   sample.tree <- hclust(d = distance.matrix,method = hclust.method)$merge
@@ -220,8 +236,8 @@ SampleTree.STACAS <- function (
   
   #Sum of anchors between sets
   nanch <- list()
-  names(x = object.list) <- as.character(-(1:length(x = object.list)))
-  for (i in 1:length(object.list)) {
+  names(object.list) <- as.character(-(1:length(object.list)))
+  for (i in reference.objects) {
     nanch[[as.character(-i)]] <- strength_function(subset(anchors,dataset1==i),
                                                    method = method,
                                                    usecol=usecol)
@@ -229,8 +245,8 @@ SampleTree.STACAS <- function (
   
   #Which is the most connected dataset?
   base <- which.max(nanch)
-  if (!is.null(obj.names)) { 
-    base <- obj.names[base]
+  if (!is.null(names)) { 
+    base <- names[base]
   }    
   message(sprintf("Building integration tree with base dataset: %s", base))
   
@@ -392,6 +408,7 @@ PlotAnchors.STACAS <- function(
 #' @param verbose Print progress bar and output
 #' @return Returns a \code{Seurat} object with a new integrated Assay, with batch-corrected expression values
 #' @import Seurat
+#' @importFrom pbapply pblapply
 #' @export IntegrateData.STACAS
 
 IntegrateData.STACAS <- function(
@@ -429,6 +446,7 @@ IntegrateData.STACAS <- function(
     anchorset@anchors <- anchorset@anchors[anchorset@anchors$Retain_ss==TRUE,]
   }
   
+  reference.datasets <- slot(object = anchorset, name = 'reference.objects')
   object.list <- slot(object = anchorset, name = 'object.list')
   anchors <- slot(object = anchorset, name = 'anchors')
   features <- slot(object = anchorset, name = "anchor.features")
@@ -448,7 +466,7 @@ IntegrateData.STACAS <- function(
       )
     )
   }
- 
+  
   # perform pairwise integration
   reference.integrated <- PairwiseIntegrateReference.STACAS(
     anchorset = anchorset,
@@ -462,13 +480,67 @@ IntegrateData.STACAS <- function(
     verbose = verbose
   )
   
-  DefaultAssay(object = reference.integrated) <- new.assay.name
-  VariableFeatures(object = reference.integrated) <- features
-  
-  reference.integrated[["FindIntegrationAnchors"]] <- slot(object = anchorset, name = "command")
-  reference.integrated <- suppressWarnings(LogSeuratCommand(object = reference.integrated))
-  
-  return(reference.integrated)
+  if (length(reference.datasets) == length(object.list)) {
+    DefaultAssay(object = reference.integrated) <- new.assay.name
+    VariableFeatures(object = reference.integrated) <- features
+    
+    reference.integrated[["FindIntegrationAnchors"]] <- slot(object = anchorset, name = "command")
+    reference.integrated <- suppressWarnings(LogSeuratCommand(object = reference.integrated))
+    
+    return(reference.integrated)
+  } else {
+    active.assay <- DefaultAssay(obj.list[reference.datasets][[1]])
+    reference.integrated[[active.assay]] <- NULL
+    reference.integrated[[active.assay]] <- CreateAssayObject(
+      data = GetAssayData(
+        object = reference.integrated[[new.assay.name]],
+        slot = 'data'
+      ),
+      check.matrix = FALSE
+    )
+    DefaultAssay(object = reference.integrated) <- active.assay
+    reference.integrated[[new.assay.name]] <- NULL
+    VariableFeatures(object = reference.integrated) <- features
+    
+    integrated.data <- MapQueryData.local(
+      anchorset = anchorset,
+      reference = reference.integrated,
+      new.assay.name = new.assay.name,
+      features = features,
+      features.to.integrate = features.to.integrate,
+      dims = dims.vec,
+      k.weight = k.weight,
+      verbose = verbose
+    )
+    
+    # Construct final assay object
+    integrated.assay <- CreateAssayObject(
+      data = integrated.data,
+      check.matrix = FALSE
+    )
+    rm(integrated.data)
+    
+    unintegrated[[new.assay.name]] <- integrated.assay
+    rm(integrated.assay)
+    
+    unintegrated <- SetIntegrationData(
+      object = unintegrated,
+      integration.name = "Integration",
+      slot = "anchors",
+      new.data = anchors
+    )
+    unintegrated <- SetIntegrationData(
+      object = unintegrated,
+      integration.name = "Integration",
+      slot = "sample.tree",
+      new.data = sample.tree
+    )
+    DefaultAssay(unintegrated) <- new.assay.name
+    VariableFeatures(unintegrated) <- features
+    unintegrated[["FindIntegrationAnchors"]] <- slot(anchorset, name = "command")
+    unintegrated <- suppressWarnings(LogSeuratCommand(unintegrated))
+    return(unintegrated)
+  }
 }
 
 
@@ -482,6 +554,13 @@ IntegrateData.STACAS <- function(
 #' and can subsequently be used for Seurat dataset integration.
 #' @param assay A vector containing the assay to use for each Seurat object in object.list.
 #' If not specified, uses the default assay.
+#' @param reference A vector specifying the object/s to be used as a reference
+#' during integration. If NULL (default), all pairwise anchors are found (no
+#' reference/s). If not NULL, the corresponding objects in \code{object.list}
+#' will be used as references. When using a set of specified references, anchors
+#' are first found between each query and each reference. The references are
+#' then integrated through pairwise integration. Each query is then mapped to
+#' the integrated reference.
 #' @param anchor.features Can be either: \itemize{
 #'   \item{A numeric value. This will call \code{Seurat::SelectIntegrationFeatures} to identify \code{anchor.features}
 #'       genes for anchor finding.}
@@ -513,6 +592,7 @@ IntegrateData.STACAS <- function(
 Run.STACAS <- function (
     object.list = NULL,
     assay = NULL,
+    reference = NULL,
     anchor.features = 1000,
     genesBlockList = "default",
     dims = 30,
@@ -541,6 +621,7 @@ Run.STACAS <- function (
   # 1. Find anchors
   stacas_anchors <- FindAnchors.STACAS(object.list, assay=assay,
                                     anchor.features=anchor.features,
+                                    reference=reference,
                                     genesBlockList=genesBlockList, dims=dims,
                                     k.anchor=k.anchor, k.score=k.score,
                                     alpha=alpha, anchor.coverage=anchor.coverage,

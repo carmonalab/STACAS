@@ -997,15 +997,12 @@ PairwiseIntegrateReference.STACAS <- function(
   normalization.method = "LogNormalize"
   
   object.list <- slot(object = anchorset, name = "object.list")
-  
   reference.objects <- slot(object = anchorset, name = "reference.objects")
-  
   features <- features %||% slot(object = anchorset, name = "anchor.features")
   features.to.integrate <- features.to.integrate %||% features
   
   if (length(x = reference.objects) == 1) {
     ref.obj <- object.list[[reference.objects]]
-    
     ref.obj[[new.assay.name]] <- CreateAssayObject(
       data = GetAssayData(ref.obj, slot = 'data')[features.to.integrate, ]
     )
@@ -1178,3 +1175,72 @@ PairwiseIntegrateReference.STACAS <- function(
   return(unintegrated)
 }
 
+#Modified from Seurat 4.1.1
+MapQueryData.local <- function(
+    anchorset,
+    reference,
+    new.assay.name = "integrated",
+    normalization.method = "LogNormalize",
+    features = NULL,
+    features.to.integrate = NULL,
+    dims = 1:30,
+    k.weight = 100,
+    weight.reduction = NULL,
+    weights.matrix = NULL,
+    no.offset = FALSE,
+    sd.weight = 1,
+    preserve.order = FALSE,
+    eps = 0,
+    verbose = TRUE
+) {
+  normalization.method <- match.arg(arg = normalization.method)
+  reference.datasets <- slot(object = anchorset, name = 'reference.objects')
+  object.list <- slot(object = anchorset, name = 'object.list')
+  anchors <- slot(object = anchorset, name = 'anchors')
+  features <- features %||% slot(object = anchorset, name = "anchor.features")
+  features.to.integrate <- features.to.integrate %||% features
+  cellnames.list <- list()
+  for (ii in 1:length(x = object.list)) {
+    cellnames.list[[ii]] <- colnames(x = object.list[[ii]])
+  }
+  if (length(x = reference.datasets) == length(x = object.list)) {
+    query.datasets <- NULL
+  } else {
+    query.datasets <- setdiff(x = seq_along(along.with = object.list), y = reference.datasets)
+  }
+  query.corrected <- pbapply::pblapply(
+    X = query.datasets,
+    FUN = function(dataset1) {
+      if (verbose) {
+        message("\nIntegrating dataset ", dataset1, " with reference dataset")
+      }
+      filtered.anchors <- anchors[anchors$dataset1 %in% reference.datasets & anchors$dataset2 == dataset1, ]
+      integrated <- Seurat:::RunIntegration(
+        filtered.anchors = filtered.anchors,
+        reference = reference,
+        query = object.list[[dataset1]],
+        new.assay.name = new.assay.name,
+        normalization.method = normalization.method,
+        cellnames.list = cellnames.list,
+        features.to.integrate = features.to.integrate,
+        weight.reduction = weight.reduction,
+        weights.matrix = weights.matrix,
+        no.offset = no.offset,
+        features = features,
+        dims = dims,
+        k.weight = k.weight,
+        sd.weight = sd.weight,
+        eps = eps,
+        verbose = verbose
+      )
+      return(integrated)
+    }
+  )
+  reference.integrated <- GetAssayData(
+    object = reference,
+    slot = 'data'
+  )[features.to.integrate, ]
+  query.corrected[[length(x = query.corrected) + 1]] <- reference.integrated
+  all.integrated <- do.call(cbind, query.corrected)
+  return(all.integrated)
+}
