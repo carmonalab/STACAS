@@ -21,6 +21,9 @@
 #' are first found between each query and each reference. The references are
 #' then integrated through pairwise integration. Each query is then mapped to
 #' the integrated reference.
+#' @param max.seed.objects Number of objects to use as seeds to
+#' build the integration tree. Automatically chooses the largest max.seed.objects datasets;
+#' the remaining datasets will be added sequentially to the reference.
 #' @param anchor.features Can be either: \itemize{
 #'   \item{A numeric value. This will call \code{FindVariableFeatures.STACAS} to identify \code{anchor.features}
 #'       that are consistently variable across datasets}
@@ -54,6 +57,7 @@ FindAnchors.STACAS <- function (
   object.list = NULL,
   assay = NULL,
   reference = NULL,
+  max.seed.objects = 10,
   anchor.features = 1000,
   genesBlockList = "default",
   dims = 30,
@@ -137,6 +141,14 @@ FindAnchors.STACAS <- function (
   }
   if (verbose) {
     cat("\nFinding integration anchors...\n")
+  }
+  
+  #With a large list of input objects, select the top max.seed.objects to build a reference
+  if (is.null(reference) & length(object.list) > max.seed.objects) {
+    sizes <- unlist(lapply(object.list, ncol))
+    names(sizes) <- seq_along(sizes)
+    sizes <- sort(sizes, decreasing = T)[1:max.seed.objects]
+    reference <- sort(as.numeric(names(sizes)))
   }
   
   #Find pairwise anchors and keep distance information
@@ -561,6 +573,9 @@ IntegrateData.STACAS <- function(
 #' are first found between each query and each reference. The references are
 #' then integrated through pairwise integration. Each query is then mapped to
 #' the integrated reference.
+#' @param max.seed.objects Number of objects to use as seeds to
+#' build the integration tree. Automatically chooses the largest max.seed.objects datasets;
+#' the remaining datasets will be added sequentially to the reference.
 #' @param anchor.features Can be either: \itemize{
 #'   \item{A numeric value. This will call \code{Seurat::SelectIntegrationFeatures} to identify \code{anchor.features}
 #'       genes for anchor finding.}
@@ -593,6 +608,7 @@ Run.STACAS <- function (
     object.list = NULL,
     assay = NULL,
     reference = NULL,
+    max.seed.objects = 10,
     anchor.features = 1000,
     genesBlockList = "default",
     dims = 30,
@@ -622,6 +638,7 @@ Run.STACAS <- function (
   stacas_anchors <- FindAnchors.STACAS(object.list, assay=assay,
                                     anchor.features=anchor.features,
                                     reference=reference,
+                                    max.seed.objects = max.seed.objects,
                                     genesBlockList=genesBlockList, dims=dims,
                                     k.anchor=k.anchor, k.score=k.score,
                                     alpha=alpha, anchor.coverage=anchor.coverage,

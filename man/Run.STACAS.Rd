@@ -8,6 +8,7 @@ Run.STACAS(
   object.list = NULL,
   assay = NULL,
   reference = NULL,
+  max.seed.objects = 10,
   anchor.features = 1000,
   genesBlockList = "default",
   dims = 30,
@@ -38,6 +39,10 @@ will be used as references. When using a set of specified references, anchors
 are first found between each query and each reference. The references are
 then integrated through pairwise integration. Each query is then mapped to
 the integrated reference.}
+
+\item{max.seed.objects}{Number of objects to use as seeds to
+build the integration tree. Automatically chooses the largest max.seed.objects datasets;
+the remaining datasets will be added sequentially to the reference.}
 
 \item{anchor.features}{Can be either: \itemize{
 \item{A numeric value. This will call \code{Seurat::SelectIntegrationFeatures} to identify \code{anchor.features}

@@ -348,15 +348,15 @@ FindIntegrationAnchors.wdist <- function(
   objects.ncell <- sapply(X = object.list, FUN = ncol)
   offsets <- as.vector(x = cumsum(x = c(0, objects.ncell)))[1:length(x = object.list)]
   if (is.null(x = reference)) {
-    # case for all pairwise, leave the combinations matrix the same
+    # All pairwise combinations
     if (verbose) {
       message("Finding all pairwise anchors")
     }
   } else {
-    reference <- unique(x = sort(x = reference))
-    if (max(reference) > length(x = object.list)) {
+    reference <- unique(sort(reference))
+    if (max(reference) > length(object.list)) {
       stop('Error: requested reference object ', max(reference), " but only ",
-           length(x = object.list), " objects provided")
+           length(object.list), " objects provided")
     }
     # modify the combinations matrix to retain only R-R and R-Q comparisons
     if (verbose) {
