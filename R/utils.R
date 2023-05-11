@@ -14,7 +14,7 @@ inconsistent_anchors <- function(anchors, seed=123,
                                  label.confidence=1,
                                  quantile_ss=0){
   
-  if (! cell.labels %in% colnames(anchors@reference.objects[[1]]@meta.data)) {
+  if (! cell.labels %in% colnames(anchors@object.list[[1]]@meta.data)) {
     stop(sprintf("Please specify a valid metadata column with label annotations (cell.labels). %s not found", cell.labels))
   }
   
