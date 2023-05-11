@@ -502,7 +502,7 @@ IntegrateData.STACAS <- function(
     
     return(reference.integrated)
   } else {
-    active.assay <- DefaultAssay(obj.list[reference.datasets][[1]])
+    active.assay <- DefaultAssay(anchorset@object.list[reference.datasets][[1]])
     reference.integrated[[active.assay]] <- NULL
     reference.integrated[[active.assay]] <- CreateAssayObject(
       data = GetAssayData(
