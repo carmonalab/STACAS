@@ -14,13 +14,13 @@ inconsistent_anchors <- function(anchors, seed=123,
                                  label.confidence=1,
                                  quantile_ss=0){
   
-  if (! cell.labels %in% colnames(anchors@object.list[[1]]@meta.data)) {
+  if (! cell.labels %in% colnames(anchors@reference.objects[[1]]@meta.data)) {
     stop(sprintf("Please specify a valid metadata column with label annotations (cell.labels). %s not found", cell.labels))
   }
   
   labels <- data.frame()
-  for(i in anchors@reference.objects){
-    x <-anchors@object.list[[i]]
+  for (i in seq_along(anchors@object.list)){
+    x <- anchors@object.list[[i]]
     labels <- rbind(labels, data.frame(dataset = i, ncell = 1:ncol(x),
                                        label = as.character(x@meta.data[,cell.labels])))
   }
