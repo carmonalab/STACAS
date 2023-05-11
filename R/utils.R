@@ -290,11 +290,11 @@ FindIntegrationAnchors.wdist <- function(
   } else {
     assay <- sapply(X = object.list, FUN = DefaultAssay)
   }
-  object.list <- Seurat:::CheckDuplicateCellNames(object.list = object.list)
+  object.list <- Seurat:::CheckDuplicateCellNames(object.list)
   
   slot <- "data"
   
-  if (is.numeric(x = anchor.features)) {
+  if (is.numeric(anchor.features)) {
     if (verbose) {
       message("Computing ", anchor.features, " integration features")
     }
@@ -314,7 +314,7 @@ FindIntegrationAnchors.wdist <- function(
     object.list <- pbapply::pblapply(
       X = object.list,
       FUN = function(object) {
-        ScaleData(object = object, features = anchor.features, verbose = FALSE)
+        ScaleData(object, features = anchor.features, verbose = FALSE)
       }
     )
   }
@@ -996,13 +996,13 @@ PairwiseIntegrateReference.STACAS <- function(
 ) {
   normalization.method = "LogNormalize"
   
-  object.list <- slot(object = anchorset, name = "object.list")
+  nobj <- length(anchorset@object.list)
   reference.objects <- slot(object = anchorset, name = "reference.objects")
   features <- features %||% slot(object = anchorset, name = "anchor.features")
   features.to.integrate <- features.to.integrate %||% features
   
-  if (length(x = reference.objects) == 1) {
-    ref.obj <- object.list[[reference.objects]]
+  if (length(reference.objects) == 1) {
+    ref.obj <- anchorset@object.list[[reference.objects]]
     ref.obj[[new.assay.name]] <- CreateAssayObject(
       data = GetAssayData(ref.obj, slot = 'data')[features.to.integrate, ]
     )
@@ -1011,78 +1011,80 @@ PairwiseIntegrateReference.STACAS <- function(
   }
   anchors <- slot(object = anchorset, name = "anchors")
   offsets <- slot(object = anchorset, name = "offsets")
-  objects.ncell <- sapply(X = object.list, FUN = ncol)
-  if (!is.null(x = weight.reduction)) {
-    if (length(x = weight.reduction) == 1 | inherits(x = weight.reduction, what = "DimReduc")) {
-      if (length(x = object.list) == 2) {
+  objects.ncell <- sapply(anchorset@object.list, FUN = ncol)
+  if (!is.null(weight.reduction)) {
+    if (length(weight.reduction) == 1 | inherits(weight.reduction, what = "DimReduc")) {
+      if (nobj == 2) {
         weight.reduction <- list(NULL, weight.reduction)
-      } else if (inherits(x = weight.reduction, what = "character")) {
-        weight.reduction <- as.list(x = rep(x = weight.reduction, times = length(x = object.list)))
+      } else if (inherits(weight.reduction, what = "character")) {
+        weight.reduction <- as.list(rep(weight.reduction, times = nobj))
       } else {
         stop("Invalid input for weight.reduction. Please specify either the names of the dimension",
              "reduction for each object in the list or provide DimReduc objects.")
       }
     }
-    if (length(x = weight.reduction) != length(x = object.list)) {
+    if (length(weight.reduction) != nobj) {
       stop("Please specify a dimension reduction for each object, or one dimension reduction to be used for all objects")
     }
-    if (inherits(x = weight.reduction, what = "character")) {
-      weight.reduction <- as.list(x = weight.reduction)
+    if (inherits(weight.reduction, what = "character")) {
+      weight.reduction <- as.list(weight.reduction)
     }
-    available.reductions <- lapply(X = object.list, FUN = FilterObjects, classes.keep = 'DimReduc')
-    for (ii in 1:length(x = weight.reduction)) {
-      if (ii == 1 & is.null(x = weight.reduction[[ii]])) next
-      if (!inherits(x = weight.reduction[[ii]], what = "DimReduc")) {
+    available.reductions <- lapply(X = anchorset@object.list,
+                                   FUN = FilterObjects, classes.keep = 'DimReduc')
+    for (ii in 1:length(weight.reduction)) {
+      if (ii == 1 & is.null(weight.reduction[[ii]])) next
+      if (!inherits(weight.reduction[[ii]], what = "DimReduc")) {
         if (!weight.reduction[[ii]] %in% available.reductions[[ii]]) {
           stop("Requested dimension reduction (", weight.reduction[[ii]], ") is not present in object ", ii)
         }
-        weight.reduction[[ii]] <- object.list[[ii]][[weight.reduction[[ii]]]]
+        weight.reduction[[ii]] <- anchorset@object.list[[ii]][[weight.reduction[[ii]]]]
       }
     }
   }
-  if (is.null(x = sample.tree)) {
+  if (is.null(sample.tree)) {
     sample.tree <- SampleTree.STACAS(
       anchorset = anchorset,
       plot = FALSE
     )
   }
   cellnames.list <- list()
-  for (ii in 1:length(x = object.list)) {
-    cellnames.list[[ii]] <- colnames(x = object.list[[ii]])
+  for (ii in 1:nobj) {
+    cellnames.list[[ii]] <- colnames(anchorset@object.list[[ii]])
   }
+  
   unintegrated <- suppressWarnings(expr = merge(
-    x = object.list[[reference.objects[[1]]]],
-    y = object.list[reference.objects[2:length(x = reference.objects)]]
+    x = anchorset@object.list[[reference.objects[[1]]]],
+    y = anchorset@object.list[reference.objects[2:length(reference.objects)]]
   ))
-  names(x = object.list) <- as.character(-(1:length(x = object.list)))
-  if (!is.null(x = weight.reduction)) {
-    names(x = weight.reduction) <- names(x = object.list)
+  names(anchorset@object.list) <- as.character(-(1:nobj))
+  if (!is.null(weight.reduction)) {
+    names(weight.reduction) <- names(anchorset@object.list)
   }
-  if (verbose & (length(x = reference.objects) != length(x = object.list))) {
+  if (verbose & (length(reference.objects) != nobj)) {
     message("Building integrated reference")
   }
-  for (ii in 1:nrow(x = sample.tree)) {
-    merge.pair <- as.character(x = sample.tree[ii, ])
-    length1 <- ncol(x = object.list[[merge.pair[1]]])
-    length2 <- ncol(x = object.list[[merge.pair[2]]])
+  for (ii in 1:nrow(sample.tree)) {
+    merge.pair <- as.character(sample.tree[ii, ])
+    length1 <- ncol(anchorset@object.list[[merge.pair[1]]])
+    length2 <- ncol(anchorset@object.list[[merge.pair[2]]])
     if (!(preserve.order) & (length2 > length1)) {
-      merge.pair <- rev(x = merge.pair)
+      merge.pair <- rev(merge.pair)
       sample.tree[ii, ] <- as.numeric(merge.pair)
     }
-    if (!is.null(x = weight.reduction)) {
+    if (!is.null(weight.reduction)) {
       # extract the correct dimreduc objects, in the correct order
       weight.pair <- weight.reduction[merge.pair]
     } else {
       weight.pair <- NULL
     }
     object.1 <- DietSeurat(
-      object = object.list[[merge.pair[1]]],
-      assays = DefaultAssay(object =  object.list[[merge.pair[1]]]),
+      object = anchorset@object.list[[merge.pair[1]]],
+      assays = DefaultAssay(anchorset@object.list[[merge.pair[1]]]),
       counts = FALSE
     )
     object.2 <- DietSeurat(
-      object = object.list[[merge.pair[2]]],
-      assays = DefaultAssay(object =  object.list[[merge.pair[2]]]),
+      object = anchorset@object.list[[merge.pair[2]]],
+      assays = DefaultAssay(anchorset@object.list[[merge.pair[2]]]),
       counts = FALSE
     )
     # suppress key duplication warning
@@ -1136,13 +1138,13 @@ PairwiseIntegrateReference.STACAS <- function(
 
     merged.obj[[new.assay.name]] <- CreateAssayObject(data = integrated.matrix)
     DefaultAssay(object = merged.obj) <- new.assay.name
-    object.list[[as.character(x = ii)]] <- merged.obj
-    object.list[[merge.pair[[1]]]] <- NULL
-    object.list[[merge.pair[[2]]]] <- NULL
+    anchorset@object.list[[as.character(x = ii)]] <- merged.obj
+    anchorset@object.list[[merge.pair[[1]]]] <- NULL
+    anchorset@object.list[[merge.pair[[2]]]] <- NULL
     invisible(x = CheckGC())
   }
   integrated.data <- GetAssayData(
-    object = object.list[[as.character(x = ii)]],
+    object = anchorset@object.list[[as.character(ii)]],
     assay = new.assay.name,
     slot = 'data'
   )
@@ -1195,18 +1197,18 @@ MapQueryData.local <- function(
 ) {
   normalization.method <- match.arg(arg = normalization.method)
   reference.datasets <- slot(object = anchorset, name = 'reference.objects')
-  object.list <- slot(object = anchorset, name = 'object.list')
+  nobj <- length(anchorset@object.list)
   anchors <- slot(object = anchorset, name = 'anchors')
   features <- features %||% slot(object = anchorset, name = "anchor.features")
   features.to.integrate <- features.to.integrate %||% features
   cellnames.list <- list()
-  for (ii in 1:length(x = object.list)) {
-    cellnames.list[[ii]] <- colnames(x = object.list[[ii]])
+  for (ii in 1:nobj) {
+    cellnames.list[[ii]] <- colnames(anchorset@object.list[[ii]])
   }
-  if (length(x = reference.datasets) == length(x = object.list)) {
+  if (length(reference.datasets) == nobj) {
     query.datasets <- NULL
   } else {
-    query.datasets <- setdiff(x = seq_along(along.with = object.list), y = reference.datasets)
+    query.datasets <- setdiff(seq(from=1, to=nobj), reference.datasets)
   }
   query.corrected <- pbapply::pblapply(
     X = query.datasets,
@@ -1218,7 +1220,7 @@ MapQueryData.local <- function(
       integrated <- Seurat:::RunIntegration(
         filtered.anchors = filtered.anchors,
         reference = reference,
-        query = object.list[[dataset1]],
+        query = anchorset@object.list[[dataset1]],
         new.assay.name = new.assay.name,
         normalization.method = normalization.method,
         cellnames.list = cellnames.list,

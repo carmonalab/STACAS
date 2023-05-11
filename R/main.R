@@ -99,7 +99,7 @@ FindAnchors.STACAS <- function (
     object.list <- sapply(
       X = 1:length(object.list),
       FUN = function(x) {
-        DefaultAssay(object = object.list[[x]]) <- assay[x]
+        DefaultAssay(object.list[[x]]) <- assay[x]
         return(object.list[[x]])
       }
     )
@@ -459,12 +459,12 @@ IntegrateData.STACAS <- function(
   }
   
   reference.datasets <- slot(object = anchorset, name = 'reference.objects')
-  object.list <- slot(object = anchorset, name = 'object.list')
+  nobj <- length(anchorset@object.list)
   anchors <- slot(object = anchorset, name = 'anchors')
   features <- slot(object = anchorset, name = "anchor.features")
   unintegrated <- suppressWarnings(expr = merge(
-    x = object.list[[1]],
-    y = object.list[2:length(x = object.list)]
+    x = anchorset@object.list[[1]],
+    y = anchorset@object.list[2:nobj]
   ))
   if (!is.null(x = features.to.integrate)) {
     features.to.integrate <- intersect(
@@ -472,7 +472,7 @@ IntegrateData.STACAS <- function(
       y = Reduce(
         f = intersect,
         x = lapply(
-          X = object.list,
+          X = anchorset@object.list,
           FUN = rownames
         )
       )
@@ -492,7 +492,7 @@ IntegrateData.STACAS <- function(
     verbose = verbose
   )
   
-  if (length(reference.datasets) == length(object.list)) {
+  if (length(reference.datasets) == nobj) {
     DefaultAssay(object = reference.integrated) <- new.assay.name
     VariableFeatures(object = reference.integrated) <- features
     
@@ -510,9 +510,9 @@ IntegrateData.STACAS <- function(
       ),
       check.matrix = FALSE
     )
-    DefaultAssay(object = reference.integrated) <- active.assay
+    DefaultAssay(reference.integrated) <- active.assay
     reference.integrated[[new.assay.name]] <- NULL
-    VariableFeatures(object = reference.integrated) <- features
+    VariableFeatures(reference.integrated) <- features
     
     integrated.data <- MapQueryData.local(
       anchorset = anchorset,
@@ -524,16 +524,14 @@ IntegrateData.STACAS <- function(
       k.weight = k.weight,
       verbose = verbose
     )
+    rm(reference.integrated)
     
     # Construct final assay object
-    integrated.assay <- CreateAssayObject(
+    unintegrated[[new.assay.name]] <- CreateAssayObject(
       data = integrated.data,
       check.matrix = FALSE
     )
     rm(integrated.data)
-    
-    unintegrated[[new.assay.name]] <- integrated.assay
-    rm(integrated.assay)
     
     unintegrated <- SetIntegrationData(
       object = unintegrated,
@@ -646,6 +644,8 @@ Run.STACAS <- function (
                                     cell.labels=cell.labels, seed=seed,
                                     label.confidence=label.confidence, verbose=verbose)
   
+  rm(object.list)
+  
   if (is.null(cell.labels)) {
     semisupervised <- FALSE
   } else {
@@ -664,6 +664,8 @@ Run.STACAS <- function (
   integrated <- IntegrateData.STACAS(stacas_anchors, dims=dims, sample.tree=tree,
                                      k.weight = k.weight, semisupervised = semisupervised,
                                      features.to.integrate=stacas_anchors@anchor.features)
+  
+  rm(stacas_anchors)
   
   # 4. Calculate batch-corrected PCA space
   integrated <- ScaleData(integrated)
