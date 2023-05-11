@@ -307,10 +307,11 @@ FindVariableFeatures.STACAS <- function(
     max.exp=3)
 {
   
+  assay <- DefaultAssay(obj)
   #Calculate a fixed number of HVG, then filtered to nfeat at the end
   obj <- Seurat::FindVariableFeatures(obj, nfeatures = 10000, verbose=F)
   
-  varfeat <- obj@assays$RNA@var.features
+  varfeat <- VariableFeatures(obj)
   
   if (is.list(genesBlockList)) {
     genes.block <- unlist(genesBlockList) #user-provided list
@@ -327,13 +328,13 @@ FindVariableFeatures.STACAS <- function(
   varfeat <- setdiff(varfeat, genes.block)
   
   #Also remove genes that are very poorly or always expressed (=not really variable genes)
-  means <- apply(obj@assays$RNA@data[varfeat,], 1, mean)
+  means <- apply(obj@assays[[assay]]@data[varfeat,], 1, mean)
   removeGenes2 <- names(means[means<min.exp | means>max.exp])
   
   varfeat <- setdiff(varfeat, removeGenes2)
   n <- min(length(varfeat), nfeat)
   
-  obj@assays$RNA@var.features <- varfeat[1:n]
+  VariableFeatures(obj) <- varfeat[1:n]
   
   return(obj)
 }  
@@ -699,6 +700,7 @@ Run.STACAS <- function (
 
 StandardizeGeneSymbols = function(obj, EnsemblGeneTable=NULL, EnsemblGeneFile=NULL){
   
+  assay <- DefaultAssay(obj)
   #If file is given
   if (is.null(EnsemblGeneTable)) {
     if (is.null(EnsemblGeneFile)) {
@@ -769,10 +771,10 @@ StandardizeGeneSymbols = function(obj, EnsemblGeneTable=NULL, EnsemblGeneFile=NU
   message(sprintf("Final number of genes: %i (%.2f%%)", l, l/ngenes*100))
   
   ###### 4. Subset matrix for allowed genes, and translate names
-  rows.select <- rownames(obj@assays$RNA@counts)[rownames(obj@assays$RNA@counts) %in% names(genesAllowList)]
+  rows.select <- rownames(obj@assays[[assay]]@counts)[rownames(obj@assays[[assay]]@counts) %in% names(genesAllowList)]
   obj <- obj[rows.select, ]
-  rownames(obj@assays$RNA@data) <- unname(genesAllowList[rows.select])
-  rownames(obj@assays$RNA@counts) <- unname(genesAllowList[rows.select])
+  rownames(obj@assays[[assay]]@data) <- unname(genesAllowList[rows.select])
+  rownames(obj@assays[[assay]]@counts) <- unname(genesAllowList[rows.select])
   return(obj)
 }
 
