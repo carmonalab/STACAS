@@ -90,10 +90,11 @@ FindAnchors.STACAS <- function (
   } else {
     stop("unsupported type for 'dims' parameter")
   }
+  nobj <- length(object.list)
   
   #default assay, or user-defined assay
   if (!is.null(assay)) {
-    if (length(assay) != length(object.list)) {
+    if (length(assay) != nobj) {
       stop("If specifying the assay, please specify one assay per object in the object.list")
     }
     object.list <- sapply(
@@ -129,12 +130,12 @@ FindAnchors.STACAS <- function (
   
   #prepare PCA without data-rescaling
   message("Preparing PCA embeddings for objects...")
-  for (i in 1:length(object.list)) {
+  for (i in 1:nobj) {
     object.list[[i]] <- ScaleData(object.list[[i]], assay=assay[i], model.use="linear",
                                   do.center=FALSE, do.scale=FALSE,
                                   features = anchor.features, verbose=FALSE)
     if (verbose) {
-      cat(paste0(" ",i,"/",length(object.list)))
+      cat(paste0(" ",i,"/",nobj))
     }
     object.list[[i]] <- RunPCA(object.list[[i]], features = anchor.features, npcs=dims,
                                ndims.print = NA, nfeatures.print = NA, verbose=FALSE)
@@ -144,7 +145,7 @@ FindAnchors.STACAS <- function (
   }
   
   #With a large list of input objects, select the top max.seed.objects to build a reference
-  if (is.null(reference) & length(object.list) > max.seed.objects) {
+  if (is.null(reference) & nobj > max.seed.objects) {
     sizes <- unlist(lapply(object.list, ncol))
     names(sizes) <- seq_along(sizes)
     sizes <- sort(sizes, decreasing = T)[1:max.seed.objects]
