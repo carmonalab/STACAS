@@ -21,8 +21,8 @@
 #' are first found between each query and each reference. The references are
 #' then integrated through pairwise integration. Each query is then mapped to
 #' the integrated reference.
-#' @param max.seed.objects Number of objects to use as seeds to
-#' build the integration tree. Automatically chooses the largest max.seed.objects datasets;
+#' @param max.seed.objects Number of objects to use as seeds to build the integration tree.
+#' Automatically chooses the largest max.seed.objects datasets;
 #' the remaining datasets will be added sequentially to the reference.
 #' @param anchor.features Can be either: \itemize{
 #'   \item{A numeric value. This will call \code{FindVariableFeatures.STACAS} to identify \code{anchor.features}
