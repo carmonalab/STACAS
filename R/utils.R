@@ -252,6 +252,7 @@ FindIntegrationAnchors.wdist <- function(
     object.list = NULL,
     assay = NULL,
     reference = NULL,
+    normalization.method <- "LogNormalize",
     anchor.features = 2000,
     l2.norm = TRUE,
     dims = 1:10,
@@ -263,7 +264,6 @@ FindIntegrationAnchors.wdist <- function(
 ) {
   
   scale = FALSE
-  normalization.method <- "LogNormalize"
   reduction <- "pca"
   nn.method = "rann"
   eps = 0
