@@ -252,7 +252,7 @@ FindIntegrationAnchors.wdist <- function(
     object.list = NULL,
     assay = NULL,
     reference = NULL,
-    normalization.method <- "LogNormalize",
+    normalization.method = "LogNormalize",
     anchor.features = 2000,
     l2.norm = TRUE,
     dims = 1:10,
@@ -986,6 +986,7 @@ PairwiseIntegrateReference.STACAS <- function(
     new.assay.name = "integrated",
     features = NULL,
     features.to.integrate = NULL,
+    normalization.method = "LogNormalize",
     dims = 1:30,
     k.weight = 100,
     weight.reduction = NULL,
@@ -994,7 +995,6 @@ PairwiseIntegrateReference.STACAS <- function(
     preserve.order = TRUE,
     verbose = TRUE
 ) {
-  normalization.method = "LogNormalize"
   
   nobj <- length(anchorset@object.list)
   reference.objects <- slot(object = anchorset, name = "reference.objects")
