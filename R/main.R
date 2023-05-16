@@ -464,10 +464,12 @@ IntegrateData.STACAS <- function(
   nobj <- length(anchorset@object.list)
   anchors <- slot(object = anchorset, name = 'anchors')
   features <- slot(object = anchorset, name = "anchor.features")
+  
   unintegrated <- suppressWarnings(expr = merge(
     x = anchorset@object.list[[1]],
     y = anchorset@object.list[2:nobj]
   ))
+
   if (!is.null(x = features.to.integrate)) {
     features.to.integrate <- intersect(
       x = features.to.integrate,
@@ -515,6 +517,13 @@ IntegrateData.STACAS <- function(
     DefaultAssay(reference.integrated) <- active.assay
     reference.integrated[[new.assay.name]] <- NULL
     VariableFeatures(reference.integrated) <- features
+    
+    anchorset@object.list <- lapply(anchorset@object.list, function(x) {
+      if (!active.assay %in% Assays(x)) {
+        suppressWarnings(x[[active.assay]] <- x[[DefaultAssay(x)]])
+      }
+      x
+    })
     
     integrated.data <- MapQueryData.local(
       anchorset = anchorset,
