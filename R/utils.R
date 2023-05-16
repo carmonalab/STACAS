@@ -1212,15 +1212,15 @@ MapQueryData.local <- function(
   }
   query.corrected <- pbapply::pblapply(
     X = query.datasets,
-    FUN = function(dataset1) {
+    FUN = function(this.dataset) {
       if (verbose) {
-        message("\nIntegrating dataset ", dataset1, " with reference dataset")
+        message("\nIntegrating dataset ", this.dataset, " with reference dataset")
       }
-      filtered.anchors <- anchors[anchors$dataset1 %in% reference.datasets & anchors$dataset2 == dataset1, ]
+      filtered.anchors <- anchors[anchors$dataset1 %in% reference.datasets & anchors$dataset2 == this.dataset, ]
       integrated <- Seurat:::RunIntegration(
         filtered.anchors = filtered.anchors,
         reference = reference,
-        query = anchorset@object.list[[dataset1]],
+        query = anchorset@object.list[[this.dataset]],
         new.assay.name = new.assay.name,
         normalization.method = normalization.method,
         cellnames.list = cellnames.list,
@@ -1242,7 +1242,7 @@ MapQueryData.local <- function(
     object = reference,
     slot = 'data'
   )[features.to.integrate, ]
-  query.corrected[[length(x = query.corrected) + 1]] <- reference.integrated
+  query.corrected[[length(query.corrected) + 1]] <- reference.integrated
   all.integrated <- do.call(cbind, query.corrected)
   return(all.integrated)
 }

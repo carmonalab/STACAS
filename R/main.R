@@ -105,7 +105,7 @@ FindAnchors.STACAS <- function (
       }
     )
   } else {
-    assay <- sapply(X = object.list, FUN = DefaultAssay)
+    assay <- sapply(object.list, DefaultAssay)
   }
 
   #Calculate anchor genes
@@ -497,11 +497,11 @@ IntegrateData.STACAS <- function(
   )
   
   if (length(reference.datasets) == nobj) {
-    DefaultAssay(object = reference.integrated) <- new.assay.name
-    VariableFeatures(object = reference.integrated) <- features
+    DefaultAssay(reference.integrated) <- new.assay.name
+    VariableFeatures(reference.integrated) <- features
     
-    reference.integrated[["FindIntegrationAnchors"]] <- slot(object = anchorset, name = "command")
-    reference.integrated <- suppressWarnings(LogSeuratCommand(object = reference.integrated))
+    reference.integrated[["FindIntegrationAnchors"]] <- slot(anchorset, name = "command")
+    reference.integrated <- suppressWarnings(LogSeuratCommand(reference.integrated))
     
     return(reference.integrated)
   } else {
