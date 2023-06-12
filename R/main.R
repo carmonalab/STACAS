@@ -575,6 +575,7 @@ IntegrateData.STACAS <- function(
 #' and can subsequently be used for Seurat dataset integration.
 #' @param assay A vector containing the assay to use for each Seurat object in object.list.
 #' If not specified, uses the default assay.
+#' @param new.assay.name Assay to store the integrated data
 #' @param reference A vector specifying the object/s to be used as a reference
 #' during integration. If NULL (default), all pairwise anchors are found (no
 #' reference/s). If not NULL, the corresponding objects in \code{object.list}
@@ -616,6 +617,7 @@ IntegrateData.STACAS <- function(
 Run.STACAS <- function (
     object.list = NULL,
     assay = NULL,
+    new.assay.name = "integrated",
     reference = NULL,
     max.seed.objects = 10,
     anchor.features = 1000,
@@ -673,6 +675,7 @@ Run.STACAS <- function (
   
   # 3. Integrate datasets
   integrated <- IntegrateData.STACAS(stacas_anchors, dims=dims, sample.tree=tree,
+                                     new.assay.name = new.assay.name,
                                      k.weight = k.weight, semisupervised = semisupervised,
                                      features.to.integrate=stacas_anchors@anchor.features)
   

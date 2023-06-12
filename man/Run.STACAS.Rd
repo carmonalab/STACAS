@@ -7,6 +7,7 @@
 Run.STACAS(
   object.list = NULL,
   assay = NULL,
+  new.assay.name = "integrated",
   reference = NULL,
   max.seed.objects = 10,
   anchor.features = 1000,
@@ -31,6 +32,8 @@ and can subsequently be used for Seurat dataset integration.}
 
 \item{assay}{A vector containing the assay to use for each Seurat object in object.list.
 If not specified, uses the default assay.}
+
+\item{new.assay.name}{Assay to store the integrated data}
 
 \item{reference}{A vector specifying the object/s to be used as a reference
 during integration. If NULL (default), all pairwise anchors are found (no
