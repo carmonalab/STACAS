@@ -790,3 +790,96 @@ StandardizeGeneSymbols = function(obj, EnsemblGeneTable=NULL, EnsemblGeneFile=NU
   return(obj)
 }
 
+
+#' Annotate by neighbors
+#'
+#' Given a partially annotated dataset, propagate labels to un-annotated cells (NA values) by similarity with
+#' annotated cells. This can be useful after integration of fully annotated datasets with
+#' other dataset that lack cell type annotation. Propagation of labels is done by K-nearest neighbors
+#' with annotated cells in a given dimensionality reduction (e.g. PCA space).
+#' 
+#' @param obj A Seurat object
+#' @param ref.cells Barcode of the cells to be used as reference to annotate all remaining cells.
+#'     By default uses all annotated cells as reference (i.e. all cells with metadata
+#'     column 'labels.col != NA').
+#' @param reduction Dimensionality reduction to be used for knn calculation
+#' @param ndim Number of dimensions to use in given reduction (by default use all dimensions)
+#' @param k Number of nearest neighbors for knn calculation
+#' @param ncores Number of cores for multi-thread execution
+#' @param bg.pseudocount Background counts for cell type frequency estimation
+#' @param labels.col Metadata column that stores cell type annotations to be propagated   
+#' @return Returns a Seurat object with standard gene names. Genes not found in
+#'     the standard list are removed. Synonyms are accepted when
+#'     the conversion is not ambiguous.
+#' @importFrom Seurat Embeddings     
+#' @importFrom BiocNeighbors queryKNN AnnoyParam
+#' @importFrom BiocParallel MulticoreParam SerialParam
+#' @examples
+#' # Fully annotate object, where partial annotations are stored in metadata column "celltype"
+#' obj.full <- annotate.by.neighbors(obj.partial, labels.col="celltype")
+#' 
+#' @export
+annotate.by.neighbors <- function (obj,
+                                   ref.cells=NULL,
+                                   reduction = "pca",
+                                   ndim = NULL,
+                                   k = 20,
+                                   ncores = 1,
+                                   bg.pseudocount = 10^9,
+                                   labels.col = "functional.cluster") {
+  
+  if (is.null(obj)) {
+    return(NULL)
+  }
+  if (is.null(ndim)) {
+    ndim <- ncol(obj@reductions[[reduction]])
+  }
+  
+  if (ncores > 1) {
+    BPPARAM <- MulticoreParam(ncores)
+  } else {
+    BPPARAM <- SerialParam()
+  }
+  if (!labels.col %in% colnames(obj[[]])) {
+    stop(sprintf("Column %s not found in object metadata", labels.col))
+  }
+  
+  if (is.null(ref.cells)) {
+    all.labs <- obj@meta.data[, labels.col]
+    ref.cells <- colnames(obj)[!is.na(all.labs)]
+  }
+  nr.cells <- setdiff(colnames(obj), ref.cells)
+  
+  if (length(nr.cells)==0) {
+    return(obj)
+  }
+  
+  ref.space <- Embeddings(obj, reduction=reduction)[ref.cells, 1:ndim]
+  query.space <- Embeddings(obj, reduction=reduction)[nr.cells, 1:ndim]
+  
+  labels <- obj@meta.data[ref.cells, labels.col]
+  
+  #calculate expected BG frequencies
+  bg <- table(labels) + bg.pseudocount
+  bg <- bg/(sum(bg))
+  
+  nn.ranked <- queryKNN(ref.space, query.space, k=k,
+                        BNPARAM=AnnoyParam(),
+                        BPPARAM=BPPARAM)
+  
+  pred.type <- apply(nn.ranked$index, 1, function(x) {
+    tab <- table(labels[x])
+    tab <- tab/sum(tab)
+    tab.norm <- tab
+    for (i in seq_along(tab)) {
+      ct <- names(tab)[i]
+      tab.norm[i] <- tab[i]/bg[ct]
+    }
+    
+    scores <- sort(tab.norm, decreasing = T)
+    names(scores)[1]
+  })
+  
+  obj@meta.data[nr.cells,labels.col] <- pred.type
+  return(obj)
+}
