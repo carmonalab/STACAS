@@ -1,15 +1,14 @@
-# STACAS: Accurate integration of single-cell transcriptomics data with cell type imbalance
+# STACAS: Accurate semi-supervised integration of single-cell transcriptomics data
 
 <p align="center">
   <img height="80" src="docs/RSticker_STACAS.png">
 </p>
 
-[STACAS](https://github.com/carmonalab/STACAS) is a method for scRNA-seq integration, specifically designed to align scRNA-seq datasets that are composed of only partially overlapping cell populations or sub-types.
-It is based on the [Seurat](https://cran.r-project.org/web/packages/Seurat/index.html) integration framework, and adds the following innovations:
+[STACAS](https://github.com/carmonalab/STACAS) is a method for scRNA-seq integration especially designed to accurately integrate datasets with large cell type imbalance.
 
-* Anchors are down-weighted based on their distance in reciprocal PCA space
-* Guide trees for pairwise integration are constructed based on the 'centrality' of datasets, as measured by the sum of their re-weighted anchor scores
-* Prior knowledge, given as cell labels, can be used by the algorithm to remove inconsistent anchors, and perform semi-supervised integration 
+Prior cell type knowledge, given as cell labels, can be provided to the algorithm to perform semi-supervised integration, leading to increased preservation of biological variability in the data.
+
+STACAS is robust to missing and imperfect cell type labels and works for large-scale integrations.
 
 ## Package Installation
 
@@ -35,7 +34,7 @@ library(Seurat)
 InstallData("pbmcsca")
 data("pbmcsca")
 
-# Integrate scRNA-seq datasets generated with different methods/technologies
+# Integrate scRNA-seq datasets generated in different batches (in this example, using different methods/technologies)
 pbmcsca.integrated <- NormalizeData(pbmcsca) |>
     SplitObject(split.by = "Method")|>
     Run.STACAS()
