@@ -4,11 +4,11 @@
   <img height="80" src="docs/RSticker_STACAS.png">
 </p>
 
-[STACAS](https://github.com/carmonalab/STACAS) is a method for scRNA-seq integration especially designed to accurately integrate datasets with large cell type imbalance.
+[STACAS](https://github.com/carmonalab/STACAS) is a method for scRNA-seq integration, especially suited to accurately integrate datasets with large cell type imbalance.
 
-Prior cell type knowledge, given as cell labels, can be provided to the algorithm to perform semi-supervised integration, leading to increased preservation of biological variability in the data.
+Prior cell type knowledge, given as cell type labels, can be provided to the algorithm to perform semi-supervised integration, leading to increased preservation of biological variability in the resulting integrated space.
 
-STACAS is robust to missing and imperfect cell type labels and works for large-scale integrations.
+STACAS is robust to incomplete cell type labels and can be applied to large-scale integration tasks.
 
 ## Package Installation
 
@@ -22,7 +22,7 @@ remotes::install_github("carmonalab/STACAS")
 ```
 
 ## STACAS basic usage
-### Standard integration (more [here](https://carmonalab.github.io/STACAS.demo/STACAS.demo.html#standard-integration))
+### Standard integration (more [here](https://carmonalab.github.io/STACAS.demo/STACAS.demo.html#one-liner-stacas))
 ```r
 library(STACAS)
 
@@ -59,7 +59,7 @@ pbmcsca.semisup <- RunUMAP(pbmcsca.semisup, dims = 1:30)
 
 Find a tutorial for `STACAS` in a complete Seurat integration pipeline at: [STACAS demo](https://carmonalab.github.io/STACAS.demo/STACAS.demo.html) (code and instructions [here](https://github.com/carmonalab/STACAS.demo))
 
-See also how `STACAS` compares to Seurat for the integration of heterogeneos data sets: [STACAS vs Seurat](https://carmonalab.github.io/STACAS.demo/Tcell.demo.html)
+See also how `STACAS` compares to other computational tools for the integration of heterogeneos data sets: [STACAS vs other tools](https://carmonalab.github.io/STACAS.demo/Tcell.demo.html)
 
 
 ### Citation
