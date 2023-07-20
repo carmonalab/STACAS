@@ -8,6 +8,7 @@ FindAnchors.STACAS(
   object.list = NULL,
   assay = NULL,
   reference = NULL,
+  min.sample.size = 100,
   max.seed.objects = 10,
   anchor.features = 1000,
   genesBlockList = "default",
@@ -37,6 +38,9 @@ will be used as references. When using a set of specified references, anchors
 are first found between each query and each reference. The references are
 then integrated through pairwise integration. Each query is then mapped to
 the integrated reference.}
+
+\item{min.sample.size}{Minimum number of cells per sample. Objects with fewer
+than this number of cells are not integrated.}
 
 \item{max.seed.objects}{Number of objects to use as seeds to build the integration tree.
 Automatically chooses the largest max.seed.objects datasets;

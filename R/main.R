@@ -21,6 +21,8 @@
 #' are first found between each query and each reference. The references are
 #' then integrated through pairwise integration. Each query is then mapped to
 #' the integrated reference.
+#' @param min.sample.size Minimum number of cells per sample. Objects with fewer
+#' than this number of cells are not integrated.
 #' @param max.seed.objects Number of objects to use as seeds to build the integration tree.
 #' Automatically chooses the largest max.seed.objects datasets;
 #' the remaining datasets will be added sequentially to the reference.
@@ -57,6 +59,7 @@ FindAnchors.STACAS <- function (
   object.list = NULL,
   assay = NULL,
   reference = NULL,
+  min.sample.size = 100,
   max.seed.objects = 10,
   anchor.features = 1000,
   genesBlockList = "default",
@@ -90,6 +93,16 @@ FindAnchors.STACAS <- function (
   } else {
     stop("unsupported type for 'dims' parameter")
   }
+  
+  sizes <- unlist(lapply(object.list, ncol))
+  exclude <- which(sizes < min.sample.size)
+  
+  if (length(exclude) > 0) {
+    object.list <- object.list[-c(exclude)]
+    message(sprintf("Excluding %i datasets with < %i cells", length(exclude), min.sample.size))
+    message("You may alter this behavior by setting the min.sample.size parameter")
+  }
+  
   nobj <- length(object.list)
   
   #default assay, or user-defined assay
@@ -114,7 +127,7 @@ FindAnchors.STACAS <- function (
     if (verbose) {
       message("Computing ", anchor.features, " integration features")
     }
-    check.genes(object.list)
+    #check.genes(object.list)
     
     object.list <- lapply(object.list, function(x) {
       FindVariableFeatures.STACAS(x, nfeat = n.this, genesBlockList=genesBlockList)

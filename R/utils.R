@@ -49,6 +49,7 @@ inconsistent_anchors <- function(anchors, seed=123,
   
   #Flag consistency of labels
   df$Consistent <- df$Label_1 == df$Label_2 | df$Label_1 == "unknown" | df$Label_2 == "unknown"
+  df$Consistent[is.na(df$Consistent)] <- TRUE
   
   #Rescue some anchors with a given probability
 
@@ -97,7 +98,7 @@ probabilistic_reject <- function(anchors, accept_rate=0, q=0, seed=seed){
 
   #Add this column
   flag <- anchors$Consistent
-  flag[anchors$Consistent==FALSE] <- accept
+  flag[flag==FALSE] <- accept
   anchors['Retain_ss'] <- flag
 
   return(anchors)
