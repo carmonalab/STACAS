@@ -710,8 +710,9 @@ Run.STACAS <- function (
 #' @param obj A Seurat object
 #' @param EnsemblGeneTable A data frame of gene name mappings. This should have
 #'     the format of \href{https://www.ensembl.org/info/data/biomart/index.html}{Ensembl BioMart tables}
-#'     with fields "Gene.name", "Gene.Synonym" and "Gene stable ID". See also
-#'     the default conversion table in STACAS with \code{data(EnsemblGeneTable)}
+#'     with fields "Gene name", "Gene Synonym" and "Gene stable ID" (and optionally
+#'     "NCBI gene (formerly Entrezgene) ID"). See also
+#'     the default conversion table in STACAS with \code{data(EnsemblGenes105_Mmu_GRCm39)}
 #' @param EnsemblGeneFile If \code{EnsemblGeneTable==NULL}, read a gene mapping
 #'     table from this file
 #'     
@@ -735,26 +736,42 @@ StandardizeGeneSymbols = function(obj, EnsemblGeneTable=NULL, EnsemblGeneFile=NU
   } 
   
   #Translate Ensembl IDs if necessary
-  ens.format <- FALSE
+  
   genes.in <- rownames(obj)
   ngenes <- length(genes.in)
   
   ens.count <- length(intersect(genes.in, EnsemblGeneTable[["Gene stable ID"]]))
   gname.count <- length(intersect(genes.in, EnsemblGeneTable[["Gene name"]]))
   
-  max <- max(ens.count, gname.count)
+  ncbi.count <- 0
+  if ("NCBI gene (formerly Entrezgene) ID" %in% colnames(EnsemblGeneTable)) {
+    ncbi.count <- length(intersect(genes.in, EnsemblGeneTable[["NCBI gene (formerly Entrezgene) ID"]]))
+  }
+    
+  max <- max(ens.count, gname.count, ncbi.count)
   if (max < length(genes.in)/2) {
     warning("Over 50% of genes in input object not found in reference gene table")
   }
-  if (ens.count > gname.count) {
-    ens.format <- TRUE
+  
+  gname.format <- FALSE
+  if (max == gname.count) {
+    gname.format <- TRUE
   }
   
-  if (ens.count > gname.count) {  #Input object has Ensembl IDs
-    genes.tr <- EnsemblGeneTable[["Gene name"]][match(genes.in, EnsemblGeneTable[["Gene stable ID"]])]
+  if (max == ens.count) {  #Input object has Ensembl IDs
+    to = "Gene name"
+    from = "Gene stable ID"
+    genes.tr <- EnsemblGeneTable[[to]][match(genes.in, EnsemblGeneTable[[from]])]
     names(genes.tr) <- genes.in
-    
     genes.tr <- genes.tr[!is.na(genes.tr) & genes.tr != ""]
+    
+  } else if (max == ncbi.count) {
+    to = "Gene name"
+    from = "NCBI gene (formerly Entrezgene) ID"
+    genes.tr <- EnsemblGeneTable[[to]][match(genes.in, EnsemblGeneTable[[from]])]
+    names(genes.tr) <- genes.in
+    genes.tr <- genes.tr[!is.na(genes.tr) & genes.tr != ""]
+    
   } else {
     genes.tr <- genes.in
     names(genes.tr) <- genes.in
@@ -772,7 +789,7 @@ StandardizeGeneSymbols = function(obj, EnsemblGeneTable=NULL, EnsemblGeneFile=NU
   
   message(sprintf("Number of genes with standard symbols: %i (%.2f%%)", l, l/ngenes*100))
   
-  if (l < ngenes & !ens.format){
+  if (l < ngenes & gname.format){
     message(paste("Examples of non-standard Gene.names:"))
     message(paste(head(genes.tr[ !genes.tr %in% EnsemblGeneTable[["Gene name"]] ])))
   }
@@ -800,6 +817,13 @@ StandardizeGeneSymbols = function(obj, EnsemblGeneTable=NULL, EnsemblGeneFile=NU
   obj <- obj[rows.select, ]
   rownames(obj@assays[[assay]]@data) <- unname(genesAllowList[rows.select])
   rownames(obj@assays[[assay]]@counts) <- unname(genesAllowList[rows.select])
+  
+  ### also update meta-features, if present
+  if (!is.null(obj@assays[[assay]]@meta.features)) {
+    obj@assays[[assay]]@meta.features <- obj@assays[[assay]]@meta.features[rows.select, ]
+    rownames(obj@assays[[assay]]@meta.features) <- unname(genesAllowList[rows.select])
+  }
+  
   return(obj)
 }
 

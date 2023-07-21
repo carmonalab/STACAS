@@ -11,8 +11,9 @@ StandardizeGeneSymbols(obj, EnsemblGeneTable = NULL, EnsemblGeneFile = NULL)
 
 \item{EnsemblGeneTable}{A data frame of gene name mappings. This should have
 the format of \href{https://www.ensembl.org/info/data/biomart/index.html}{Ensembl BioMart tables}
-with fields "Gene.name", "Gene.Synonym" and "Gene stable ID". See also
-the default conversion table in STACAS with \code{data(EnsemblGeneTable)}}
+with fields "Gene name", "Gene Synonym" and "Gene stable ID" (and optionally
+"NCBI gene (formerly Entrezgene) ID"). See also
+the default conversion table in STACAS with \code{data(EnsemblGenes105_Mmu_GRCm39)}}
 
 \item{EnsemblGeneFile}{If \code{EnsemblGeneTable==NULL}, read a gene mapping
 table from this file}
