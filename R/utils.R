@@ -1218,6 +1218,9 @@ MapQueryData.local <- function(
         message("\nIntegrating dataset ", this.dataset, " with reference dataset")
       }
       filtered.anchors <- anchors[anchors$dataset1 %in% reference.datasets & anchors$dataset2 == this.dataset, ]
+      if (nrow(filtered.anchors) == 0) {
+        return(NULL)
+      }
       integrated <- Seurat:::RunIntegration(
         filtered.anchors = filtered.anchors,
         reference = reference,
