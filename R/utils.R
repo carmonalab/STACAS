@@ -1109,6 +1109,11 @@ PairwiseIntegrateReference.STACAS <- function(
       message("Extracting anchors for merged samples")
     }
     filtered.anchors <- anchors[anchors$dataset1 %in% datasets$object1 & anchors$dataset2 %in% datasets$object2, ]
+    if (nrow(filtered.anchors) == 0) {
+      stop(sprintf("Zero anchors were found between datasets %s and %s",
+           paste0(datasets$object1, collapse = ","),
+           paste0(datasets$object2, collapse = ",")))
+    }
     
     #k.weight == "max" disables local rescaling of anchor weights
     
