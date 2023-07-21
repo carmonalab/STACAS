@@ -550,6 +550,10 @@ IntegrateData.STACAS <- function(
     )
     rm(reference.integrated)
     
+    if (ncol(unintegrated) != ncol(integrated.data)) {
+      unintegrated <- subset(unintegrated, cells=colnames(integrated.data))
+    }
+    
     # Construct final assay object
     unintegrated[[new.assay.name]] <- CreateAssayObject(
       data = integrated.data,
