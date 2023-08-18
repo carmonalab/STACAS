@@ -625,6 +625,7 @@ IntegrateData.STACAS <- function(
 #' for semi-supervised alignment (optional). Cells annotated as NA or NULL will not be penalized in semi-supervised
 #' alignment
 #' @param label.confidence How much you trust the provided cell labels (from 0 to 1).
+#' @param scale.data Whether to rescale expression data before PCA reduction.
 #' @param hclust.method Clustering method for integration tree (single, complete, average, ward) 
 #' @param seed Random seed for probabilistic anchor acceptance
 #' @param verbose Print all output
@@ -650,6 +651,7 @@ Run.STACAS <- function (
     correction.scale = 2,  
     cell.labels = NULL,
     label.confidence = 1,
+    scale.data = FALSE,
     hclust.method = c("single","complete","ward.D2","average"),
     seed = 123,
     verbose = FALSE
@@ -674,7 +676,8 @@ Run.STACAS <- function (
                                     alpha=alpha, anchor.coverage=anchor.coverage,
                                     correction.scale=correction.scale,
                                     cell.labels=cell.labels, seed=seed,
-                                    label.confidence=label.confidence, verbose=verbose)
+                                    label.confidence=label.confidence,
+                                    scale.data=scale.data, verbose=verbose)
   
   rm(object.list)
   

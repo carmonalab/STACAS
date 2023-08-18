@@ -21,6 +21,7 @@ Run.STACAS(
   correction.scale = 2,
   cell.labels = NULL,
   label.confidence = 1,
+  scale.data = FALSE,
   hclust.method = c("single", "complete", "ward.D2", "average"),
   seed = 123,
   verbose = FALSE
@@ -77,6 +78,8 @@ for semi-supervised alignment (optional). Cells annotated as NA or NULL will not
 alignment}
 
 \item{label.confidence}{How much you trust the provided cell labels (from 0 to 1).}
+
+\item{scale.data}{Whether to rescale expression data before PCA reduction.}
 
 \item{hclust.method}{Clustering method for integration tree (single, complete, average, ward)}
 

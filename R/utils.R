@@ -298,9 +298,6 @@ FindIntegrationAnchors.wdist <- function(
     if (verbose) {
       message("Computing ", anchor.features, " integration features")
     }
-    
-    #NOTE: improve on the following function to exclude blacklisted genes (mito, ribo, cycling), as well as
-    #genes that are expressed in very few or all cells
     anchor.features <- SelectIntegrationFeatures(
       object.list = object.list,
       nfeatures = anchor.features,
