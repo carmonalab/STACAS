@@ -264,7 +264,6 @@ FindIntegrationAnchors.wdist <- function(
     verbose = TRUE
 ) {
   
-  scale = FALSE
   reduction <- "pca"
   nn.method = "rann"
   eps = 0
@@ -306,17 +305,6 @@ FindIntegrationAnchors.wdist <- function(
       object.list = object.list,
       nfeatures = anchor.features,
       assay = assay
-    )
-  }
-  if (scale) {
-    if (verbose) {
-      message("Scaling features for provided objects")
-    }
-    object.list <- pbapply::pblapply(
-      X = object.list,
-      FUN = function(object) {
-        ScaleData(object, features = anchor.features, verbose = FALSE)
-      }
     )
   }
   nn.reduction <- reduction

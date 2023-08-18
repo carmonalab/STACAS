@@ -47,6 +47,7 @@
 #' unannotated cells as NA or 'unknown' for this column. Cells with NA or 'unknown' cell labels will not be
 #' penalized in semi-supervised alignment.
 #' @param label.confidence How much you trust the provided cell labels (from 0 to 1).
+#' @param scale.data Whether to rescale expression data before PCA reduction.
 #' @param seed Random seed for probabilistic anchor acceptance
 #' @param verbose Print all output
 #' 
@@ -71,6 +72,7 @@ FindAnchors.STACAS <- function (
   correction.scale = 2,  
   cell.labels = NULL,
   label.confidence = 1,
+  scale.data = FALSE,
   seed = 123,
   verbose = TRUE
 ) {
@@ -141,11 +143,11 @@ FindAnchors.STACAS <- function (
     )
   }
   
-  #prepare PCA without data-rescaling
+  #Prepare PCA embeddings
   message("Preparing PCA embeddings for objects...")
   for (i in 1:nobj) {
     object.list[[i]] <- ScaleData(object.list[[i]], assay=assay[i], model.use="linear",
-                                  do.center=FALSE, do.scale=FALSE,
+                                  do.center=scale.data, do.scale=scale.data,
                                   features = anchor.features, verbose=FALSE)
     if (verbose) {
       cat(paste0(" ",i,"/",nobj))

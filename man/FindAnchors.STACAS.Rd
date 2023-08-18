@@ -20,6 +20,7 @@ FindAnchors.STACAS(
   correction.scale = 2,
   cell.labels = NULL,
   label.confidence = 1,
+  scale.data = FALSE,
   seed = 123,
   verbose = TRUE
 )
@@ -76,6 +77,8 @@ unannotated cells as NA or 'unknown' for this column. Cells with NA or 'unknown'
 penalized in semi-supervised alignment.}
 
 \item{label.confidence}{How much you trust the provided cell labels (from 0 to 1).}
+
+\item{scale.data}{Whether to rescale expression data before PCA reduction.}
 
 \item{seed}{Random seed for probabilistic anchor acceptance}
 
