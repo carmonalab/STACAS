@@ -4,7 +4,7 @@
   <img height="80" src="docs/RSticker_STACAS.png">
 </p>
 
-[STACAS](https://github.com/carmonalab/STACAS) is a method for scRNA-seq integration, especially suited to accurately integrate datasets with large cell type imbalance.
+ [STACAS](https://github.com/carmonalab/STACAS) is a method for scRNA-seq integration, especially suited to accurately integrate datasets with large cell type imbalance (e.g. in terms of proportions of distinct cell populations).
 
 Prior cell type knowledge, given as cell type labels, can be provided to the algorithm to perform semi-supervised integration, leading to increased preservation of biological variability in the resulting integrated space.
 
