@@ -839,8 +839,10 @@ StandardizeGeneSymbols = function(obj, assay=NULL, slots=c("counts","data"),
   }
   for (s in slots) {
     if (s =="counts") {
-      obj[[assay]] <- NULL
+      obj <- RenameAssays(obj, assay.name = assay, new.assay.name = "tmp")
       obj[[assay]] <- CreateAssayObject(counts=matrix[[s]], assay=assay)
+      DefaultAssay(obj) <- assay
+      obj[["tmp"]] <- NULL
     } else {
       obj <- SetAssayData(obj, assay = assay, new.data=matrix[[s]], slot=s)
     }
