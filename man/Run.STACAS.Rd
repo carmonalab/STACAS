@@ -10,6 +10,7 @@ Run.STACAS(
   new.assay.name = "integrated",
   reference = NULL,
   max.seed.objects = 10,
+  min.sample.size = 100,
   anchor.features = 1000,
   genesBlockList = "default",
   dims = 30,
