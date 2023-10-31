@@ -13,7 +13,7 @@ StandardizeGeneSymbols(obj, EnsemblGeneTable = NULL, EnsemblGeneFile = NULL)
 the format of \href{https://www.ensembl.org/info/data/biomart/index.html}{Ensembl BioMart tables}
 with fields "Gene name", "Gene Synonym" and "Gene stable ID" (and optionally
 "NCBI gene (formerly Entrezgene) ID"). See also
-the default conversion table in STACAS with \code{data(EnsemblGenes105_Mmu_GRCm39)}}
+the default conversion table in STACAS with \code{data(EnsemblGeneTable.Mm)}}
 
 \item{EnsemblGeneFile}{If \code{EnsemblGeneTable==NULL}, read a gene mapping
 table from this file}
@@ -27,4 +27,8 @@ Returns a Seurat object with standard gene names. Genes not found in
 Converts gene names of a Seurat single-cell object to a dictionary of
 standard symbols. This function is useful prior to integration of datasets
 from different studies, where gene names may be inconsistent.
+}
+\examples{
+data(EnsemblGeneTable.Mm)
+obj <- StandardizeGeneSymbols(obj, EnsemblGeneTable=EnsemblGeneTable.Mm)
 }

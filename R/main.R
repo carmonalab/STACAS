@@ -721,13 +721,16 @@ Run.STACAS <- function (
 #'     the format of \href{https://www.ensembl.org/info/data/biomart/index.html}{Ensembl BioMart tables}
 #'     with fields "Gene name", "Gene Synonym" and "Gene stable ID" (and optionally
 #'     "NCBI gene (formerly Entrezgene) ID"). See also
-#'     the default conversion table in STACAS with \code{data(EnsemblGenes105_Mmu_GRCm39)}
+#'     the default conversion table in STACAS with \code{data(EnsemblGeneTable.Mm)}
 #' @param EnsemblGeneFile If \code{EnsemblGeneTable==NULL}, read a gene mapping
 #'     table from this file
 #'     
 #' @return Returns a Seurat object with standard gene names. Genes not found in
 #'     the standard list are removed. Synonyms are accepted when
 #'     the conversion is not ambiguous.
+#' @examples
+#' data(EnsemblGeneTable.Mm)
+#' obj <- StandardizeGeneSymbols(obj, EnsemblGeneTable=EnsemblGeneTable.Mm)
 #' @import Seurat
 #' @import R.utils
 #' @importFrom data.table fread
