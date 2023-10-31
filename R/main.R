@@ -810,7 +810,8 @@ StandardizeGeneSymbols = function(obj, assay=NULL, slots=c("counts","data"),
   
   if (l < ngenes & gname.format){
     message(paste("Examples of non-standard Gene.names:"))
-    message(paste(head(genes.tr[ !genes.tr %in% EnsemblGeneTable[["Gene name"]] ])))
+    ns <- head(genes.tr[!genes.tr %in% EnsemblGeneTable[["Gene name"]]])
+    message(paste(unname(ns), collapse = ","))
   }
   
   ###### 2. Search among synonyms
@@ -841,7 +842,7 @@ StandardizeGeneSymbols = function(obj, assay=NULL, slots=c("counts","data"),
   }
   for (s in slots) {
     if (s =="counts") {
-      obj <- RenameAssays(obj, assay.name = assay, new.assay.name = "tmp")
+      obj <- suppressWarnings(RenameAssays(obj, assay.name=assay, new.assay.name="tmp"))
       obj[[assay]] <- CreateAssayObject(counts=matrix[[s]], assay=assay)
       DefaultAssay(obj) <- assay
       obj[["tmp"]] <- NULL
