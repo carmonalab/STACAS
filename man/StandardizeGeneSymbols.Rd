@@ -4,10 +4,20 @@
 \alias{StandardizeGeneSymbols}
 \title{Standardize gene symbols}
 \usage{
-StandardizeGeneSymbols(obj, EnsemblGeneTable = NULL, EnsemblGeneFile = NULL)
+StandardizeGeneSymbols(
+  obj,
+  assay = NULL,
+  slots = c("counts", "data"),
+  EnsemblGeneTable = NULL,
+  EnsemblGeneFile = NULL
+)
 }
 \arguments{
 \item{obj}{A Seurat object}
+
+\item{assay}{Assay where gene names should be translated}
+
+\item{slots}{Slots where gene names should be translated}
 
 \item{EnsemblGeneTable}{A data frame of gene name mappings. This should have
 the format of \href{https://www.ensembl.org/info/data/biomart/index.html}{Ensembl BioMart tables}

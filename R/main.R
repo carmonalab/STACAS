@@ -343,7 +343,7 @@ FindVariableFeatures.STACAS <- function(
   varfeat <- setdiff(varfeat, genes.block)
   
   #Also remove genes that are very poorly or always expressed (=not really variable genes)
-  means <- apply(obj@assays[[assay]]@data[varfeat,], 1, mean)
+  means <- apply(GetAssayData(obj, assay=assay, slot="data")[varfeat,], 1, mean)
   removeGenes2 <- names(means[means<min.exp | means>max.exp])
   
   varfeat <- setdiff(varfeat, removeGenes2)
@@ -717,6 +717,8 @@ Run.STACAS <- function (
 #' from different studies, where gene names may be inconsistent.
 #' 
 #' @param obj A Seurat object
+#' @param assay Assay where gene names should be translated
+#' @param slots Slots where gene names should be translated
 #' @param EnsemblGeneTable A data frame of gene name mappings. This should have
 #'     the format of \href{https://www.ensembl.org/info/data/biomart/index.html}{Ensembl BioMart tables}
 #'     with fields "Gene name", "Gene Synonym" and "Gene stable ID" (and optionally
@@ -736,9 +738,12 @@ Run.STACAS <- function (
 #' @importFrom data.table fread
 #' @export
 
-StandardizeGeneSymbols = function(obj, EnsemblGeneTable=NULL, EnsemblGeneFile=NULL){
+StandardizeGeneSymbols = function(obj, assay=NULL, slots=c("counts","data"),
+                                  EnsemblGeneTable=NULL, EnsemblGeneFile=NULL){
   
-  assay <- DefaultAssay(obj)
+  if (is.null(assay)) {
+    assay <- DefaultAssay(obj)
+  }
   #If file is given
   if (is.null(EnsemblGeneTable)) {
     if (is.null(EnsemblGeneFile)) {
@@ -749,7 +754,7 @@ StandardizeGeneSymbols = function(obj, EnsemblGeneTable=NULL, EnsemblGeneFile=NU
   
   #Translate Ensembl IDs if necessary
   
-  genes.in <- rownames(obj)
+  genes.in <- rownames(GetAssayData(obj, assay = assay, slot=slots[1]))
   ngenes <- length(genes.in)
   
   ens.count <- length(intersect(genes.in, EnsemblGeneTable[["Gene stable ID"]]))
@@ -825,15 +830,20 @@ StandardizeGeneSymbols = function(obj, EnsemblGeneTable=NULL, EnsemblGeneFile=NU
   message(sprintf("Final number of genes: %i (%.2f%%)", l, l/ngenes*100))
   
   ###### 4. Subset matrix for allowed genes, and translate names
-  rows.select <- rownames(obj@assays[[assay]]@counts)[rownames(obj@assays[[assay]]@counts) %in% names(genesAllowList)]
-  obj <- obj[rows.select, ]
-  rownames(obj@assays[[assay]]@data) <- unname(genesAllowList[rows.select])
-  rownames(obj@assays[[assay]]@counts) <- unname(genesAllowList[rows.select])
-  
-  ### also update meta-features, if present
-  if (!is.null(obj@assays[[assay]]@meta.features)) {
-    obj@assays[[assay]]@meta.features <- obj@assays[[assay]]@meta.features[rows.select, ]
-    rownames(obj@assays[[assay]]@meta.features) <- unname(genesAllowList[rows.select])
+  matrix <- list()
+  for (s in slots) {
+    matrix[[s]] <- GetAssayData(obj, assay = assay, slot=s)
+    rows.select <- rownames(matrix[[s]])[rownames(matrix[[s]]) %in% names(genesAllowList)]
+    matrix[[s]] <- matrix[[s]][rows.select, ]
+    rownames(matrix[[s]]) <- unname(genesAllowList[rows.select])
+  }
+  for (s in slots) {
+    if (s =="counts") {
+      obj[[assay]] <- NULL
+      obj[[assay]] <- CreateAssayObject(counts=matrix[[s]], assay=assay)
+    } else {
+      obj <- SetAssayData(obj, assay = assay, new.data=matrix[[s]], slot=s)
+    }
   }
   
   return(obj)
