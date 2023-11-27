@@ -821,8 +821,15 @@ StandardizeGeneSymbols = function(obj, assay=NULL, slots=c("counts","data"),
   
   message(paste("Additional number of genes with accepted Gene name synonym: ",length(genesAllowList2.gn)))
   
+  ##### 2b. Search by replacing dash (-) with dot (.)
+  genes.dash <- gsub("\\.", "-", genes.tr)
+  genesAllowList2b <- genes.tr[!genes.tr %in% EnsemblGeneTable[["Gene name"]] &
+                                genes.dash %in% EnsemblGeneTable[["Gene name"]]]
+  genesAllowList2b.gn <- gsub("\\.", "-", genesAllowList2b)
+  message(paste("Additional number of genes after replacing dots: ",length(genesAllowList2b.gn)))
+  
   #Names of genesAllowList contain IDs in matrix - elements contain the new names
-  genesAllowList <- c(genesAllowList1,genesAllowList2.gn)
+  genesAllowList <- c(genesAllowList1,genesAllowList2.gn,genesAllowList2b.gn)
   
   ###### 3. Check for duplicates
   is.dup <- duplicated(genesAllowList)
