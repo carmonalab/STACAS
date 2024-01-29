@@ -53,6 +53,7 @@
 #' 
 #' @return Returns an AnchorSet object, which can be passed to \code{IntegrateData.STACAS}
 #' @import Seurat
+#' @import SeuratObject
 #' @importFrom pbapply pblapply
 #' @export
 
@@ -649,6 +650,7 @@ IntegrateData.STACAS <- function(
 #' 
 #' @return Returns a \code{Seurat} object with a new integrated Assay. Also, centered, scaled variable features data are returned in the scale.data slot, and the pca of these batch-corrected scale data in the pca `reduction` slot 
 #' @import Seurat
+#' @import SeuratObject
 #' @export
 
 Run.STACAS <- function (
