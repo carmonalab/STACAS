@@ -64,7 +64,7 @@ See also how `STACAS` compares to other computational tools for the integration 
 
 ### Citation
 
-* Andreatta M, Herault L, Gueguen P, Gfeller D, Berenstein AJ, Carmona SJ - "Semi-supervised integration of single-cell transcriptomics data", *Nature Communications* **(2024)** - https://www.biorxiv.org/content/10.1101/2023.07.07.548105v1
+* Andreatta M, Herault L, Gueguen P, Gfeller D, Berenstein AJ, Carmona SJ - "Semi-supervised integration of single-cell transcriptomics data", *Nature Communications* **(2024)** - https://www.nature.com/articles/s41467-024-45240-z
 
 * Andreatta M, Carmona SJ - "STACAS: Sub-Type Anchor Correction for Alignment in Seurat to integrate single-cell RNA-seq data", *Bioinformatics* **(2021)** - https://doi.org/10.1093/bioinformatics/btaa755
 
