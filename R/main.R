@@ -114,35 +114,27 @@ FindAnchors.STACAS <- function (
   if (length(assay) != nobj) {
     stop("If specifying the assay, please specify one assay per object in the object.list")
   }
+  #Convert v5 assays to v3
   object.list <- lapply(
     X = 1:nobj,
     FUN = function(x) {
-      suppressWarnings(
-        object.list[[x]][[assay[x]]] <- as(object.list[[x]][[assay[x]]], Class = "Assay")
+      tryCatch( {
+        layer <- SeuratObject::Layers(object.list[[x]], search = 'counts')
+        if (length(layer) > 1) {
+          message("Found multiple layers. Merging with JoinLayers")
+        }
+        suppressWarnings(
+          object.list[[x]][[assay[x]]] <- as(object.list[[x]][[assay[x]]], Class = "Assay")
+        )
+      },
+      error = function(e) {NULL}
       )
       DefaultAssay(object.list[[x]]) <- assay[x]
       object.list[[x]]
     }
   )
   
-  #Check if objects are multi-layer (only in Seurat5 or higher)
-  object.list <- lapply(
-    X = object.list,
-    FUN = function(x) {
-      tryCatch( {
-        layer <- SeuratObject::Layers(x, search = 'counts')
-        if (length(layer) > 1) {
-          message("Found multiple layers. Merging with JoinLayers")
-          x <- SeuratObject::JoinLayers(x)
-        }
-      },
-      error = function(e) {NULL}
-      )
-      x
-    }
-  )
-  
-  #Calculate anchor genes
+  #Calculate anchor features
   if (is.numeric(anchor.features)) {
     n.this <- anchor.features
     if (verbose) {
