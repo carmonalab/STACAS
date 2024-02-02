@@ -718,8 +718,8 @@ Run.STACAS <- function (
   rm(stacas_anchors)
   
   # 4. Calculate batch-corrected PCA space
-  integrated <- ScaleData(integrated)
-  integrated <- RunPCA(integrated, npcs=dims)
+  integrated <- ScaleData(integrated, verbose=FALSE)
+  integrated <- RunPCA(integrated, npcs=dims, verbose=FALSE)
   
   return(integrated)
 }
