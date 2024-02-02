@@ -107,22 +107,23 @@ FindAnchors.STACAS <- function (
   }
   
   nobj <- length(object.list)
-  
   #Default assay, or user-defined assay
-  if (!is.null(assay)) {
-    if (length(assay) != nobj) {
-      stop("If specifying the assay, please specify one assay per object in the object.list")
-    }
-    object.list <- lapply(
-      X = 1:length(object.list),
-      FUN = function(x) {
-        DefaultAssay(object.list[[x]]) <- assay[x]
-        object.list[[x]]
-      }
-    )
-  } else {
+  if (is.null(assay)) {
     assay <- sapply(object.list, DefaultAssay)
   }
+  if (length(assay) != nobj) {
+    stop("If specifying the assay, please specify one assay per object in the object.list")
+  }
+  object.list <- lapply(
+    X = 1:nobj,
+    FUN = function(x) {
+      suppressWarnings(
+        object.list[[x]][[assay[x]]] <- as(object.list[[x]][[assay[x]]], Class = "Assay")
+      )
+      DefaultAssay(object.list[[x]]) <- assay[x]
+      object.list[[x]]
+    }
+  )
   
   #Check if objects are multi-layer (only in Seurat5 or higher)
   object.list <- lapply(
