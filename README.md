@@ -61,6 +61,9 @@ Find a tutorial for `STACAS` in a complete Seurat integration pipeline at: [STAC
 
 See also how `STACAS` compares to other computational tools for the integration of heterogeneos data sets: [STACAS vs other tools](https://carmonalab.github.io/STACAS.demo/Tcell.demo.html)
 
+## Integration performance
+Use [scIntegrationMetrics](https://github.com/carmonalab/scIntegrationMetrics) to evaluate the quality of integration results, or the [snakemake pipeline](https://github.com/carmonalab/scib-pipeline) for reproducible benchmarking.
+
 
 ### Citation
 
