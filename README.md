@@ -31,8 +31,11 @@ if (!requireNamespace("remotes")) install.packages("remotes")
 if (!requireNamespace("SeuratData")) install_github('satijalab/seurat-data')
 library(SeuratData)
 library(Seurat)
+
+options(timeout = 3000)
 InstallData("pbmcsca")
 data("pbmcsca")
+pbmcsca <- UpdateSeuratObject(pbmcsca)
 
 # Integrate scRNA-seq datasets generated in different batches (in this example, using different methods/technologies)
 pbmcsca.integrated <- NormalizeData(pbmcsca) |>
