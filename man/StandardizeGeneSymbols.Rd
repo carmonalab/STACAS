@@ -40,5 +40,6 @@ from different studies, where gene names may be inconsistent.
 }
 \examples{
 data(EnsemblGeneTable.Mm)
-obj <- StandardizeGeneSymbols(obj, EnsemblGeneTable=EnsemblGeneTable.Mm)
+data(sampleObj)
+sampleObj <- StandardizeGeneSymbols(sampleObj, EnsemblGeneTable=EnsemblGeneTable.Mm)
 }

@@ -98,3 +98,9 @@ Give this information in the \code{cell.labels} metadata column. This annotation
 The set of anchors returned by this function can then be passed to \code{IntegrateData.STACAS}
 for dataset integration.
 }
+\examples{
+data(sampleObj)
+library(Seurat)
+obj.list <- SplitObject(sampleObj, split.by="donor")
+anchors <- FindAnchors.STACAS(obj.list, min.sample.size=10, k.score=5, dims=3)
+}

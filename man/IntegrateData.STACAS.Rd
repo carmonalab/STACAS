@@ -45,3 +45,10 @@ To perform semi-supervised integration, run \code{FindAnchors.STACAS} with cell 
 Integration anchors with inconsistent cell type will be excluded from integration, providing an
 integrated space that is partially guided by prior information.
 }
+\examples{
+data(sampleObj)
+library(Seurat)
+obj.list <- SplitObject(sampleObj, split.by="donor")
+anchors <- FindAnchors.STACAS(obj.list, min.sample.size=10, k.score=5, dims=3)
+integrated <- IntegrateData.STACAS(anchors, dims=3)
+}

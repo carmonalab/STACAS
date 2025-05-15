@@ -47,6 +47,7 @@ with annotated cells in a given dimensionality reduction (e.g. PCA space).
 }
 \examples{
 # Fully annotate object, where partial annotations are stored in metadata column "celltype"
+\dontrun{
 obj.full <- annotate.by.neighbors(obj.partial, labels.col="celltype")
-
+}
 }

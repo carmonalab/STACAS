@@ -50,8 +50,13 @@
 #' @param scale.data Whether to rescale expression data before PCA reduction.
 #' @param seed Random seed for probabilistic anchor acceptance
 #' @param verbose Print all output
-#' 
 #' @return Returns an AnchorSet object, which can be passed to \code{IntegrateData.STACAS}
+#'
+#' @examples
+#' data(sampleObj)
+#' library(Seurat)
+#' obj.list <- SplitObject(sampleObj, split.by="donor")
+#' anchors <- FindAnchors.STACAS(obj.list, min.sample.size=10, k.score=5, dims=3)
 #' @import Seurat
 #' @import SeuratObject
 #' @importFrom pbapply pblapply
@@ -214,6 +219,13 @@ FindAnchors.STACAS <- function (
 #' @param semisupervised Whether to use cell type label information (if available)
 #' @param plot Logical indicating if dendrogram must be plotted
 #' @return An integration tree to be passed to the integration function.
+#' 
+#' @examples
+#' data(sampleObj)
+#' library(Seurat)
+#' obj.list <- SplitObject(sampleObj, split.by="donor")
+#' anchors <- FindAnchors.STACAS(obj.list, min.sample.size=10, k.score=5, dims=3)
+#' tree <- SampleTree.STACAS(anchors)
 #' @import Seurat
 #' @importFrom stats hclust
 #' @export
@@ -314,7 +326,7 @@ SampleTree.STACAS <- function (
 #'
 #' @param obj A Seurat object containing an expression matrix
 #' @param nfeat Number of top HVG to be returned
-#' @param genesBlocklist Optionally takes a list of vectors of gene names. These genes will be removed from initial HVG set. If set to "default",
+#' @param genesBlockList Optionally takes a list of vectors of gene names. These genes will be removed from initial HVG set. If set to "default",
 #'     STACAS uses its internal list \code{data("genes.blocklist")}.
 #'     This is useful to mitigate effect of genes associated with technical artifacts or batch effects
 #'     (e.g. mitochondrial, heat-shock response). 
@@ -322,6 +334,9 @@ SampleTree.STACAS <- function (
 #' @param min.exp Minimum average normalized expression for HVG. If lower, the gene will be excluded
 #' @param max.exp Maximum average normalized expression for HVG. If higher, the gene will be excluded
 #' @return Returns a list of highly variable genes
+#' @examples
+#' data(sampleObj)
+#' hvg <- FindVariableFeatures.STACAS(sampleObj)
 #' @import Seurat
 #' @export FindVariableFeatures.STACAS
 #' 
@@ -375,6 +390,7 @@ FindVariableFeatures.STACAS <- function(
 #' @return A plot of the distribution of rPCA distances
 #' @import ggridges
 #' @import ggplot2
+#' @importFrom colorspace coords
 #' @importFrom grDevices rainbow
 #' @export
 #' 
@@ -447,6 +463,12 @@ PlotAnchors.STACAS <- function(
 #' @param semisupervised Whether to use cell type label information (if available)
 #' @param verbose Print progress bar and output
 #' @return Returns a \code{Seurat} object with a new integrated Assay, with batch-corrected expression values
+#' @examples
+#' data(sampleObj)
+#' library(Seurat)
+#' obj.list <- SplitObject(sampleObj, split.by="donor")
+#' anchors <- FindAnchors.STACAS(obj.list, min.sample.size=10, k.score=5, dims=3)
+#' integrated <- IntegrateData.STACAS(anchors, dims=3)
 #' @import Seurat
 #' @importFrom pbapply pblapply
 #' @export IntegrateData.STACAS
@@ -616,6 +638,8 @@ IntegrateData.STACAS <- function(
 #' @param max.seed.objects Number of objects to use as seeds to
 #' build the integration tree. Automatically chooses the largest max.seed.objects datasets;
 #' the remaining datasets will be added sequentially to the reference.
+#' @param min.sample.size Minimum number of cells per sample. Objects with fewer
+#' than this number of cells are not integrated.
 #' @param anchor.features Can be either: \itemize{
 #'   \item{A numeric value. This will call \code{Seurat::SelectIntegrationFeatures} to identify \code{anchor.features}
 #'       genes for anchor finding.}
@@ -640,8 +664,13 @@ IntegrateData.STACAS <- function(
 #' @param hclust.method Clustering method for integration tree (single, complete, average, ward) 
 #' @param seed Random seed for probabilistic anchor acceptance
 #' @param verbose Print all output
-#' 
 #' @return Returns a \code{Seurat} object with a new integrated Assay. Also, centered, scaled variable features data are returned in the scale.data slot, and the pca of these batch-corrected scale data in the pca `reduction` slot 
+#'
+#' @examples
+#' data(sampleObj)
+#' library(Seurat)
+#' obj.list <- SplitObject(sampleObj, split.by="donor")
+#' integrated <- Run.STACAS(obj.list, min.sample.size=10, k.score=5, dims=3)
 #' @import Seurat
 #' @import SeuratObject
 #' @export
@@ -746,7 +775,8 @@ Run.STACAS <- function (
 #'     the conversion is not ambiguous.
 #' @examples
 #' data(EnsemblGeneTable.Mm)
-#' obj <- StandardizeGeneSymbols(obj, EnsemblGeneTable=EnsemblGeneTable.Mm)
+#' data(sampleObj)
+#' sampleObj <- StandardizeGeneSymbols(sampleObj, EnsemblGeneTable=EnsemblGeneTable.Mm)
 #' @import Seurat
 #' @import R.utils
 #' @importFrom data.table fread
@@ -899,8 +929,9 @@ StandardizeGeneSymbols = function(obj, assay=NULL, slots=c("counts","data"),
 #' @importFrom BiocParallel MulticoreParam SerialParam
 #' @examples
 #' # Fully annotate object, where partial annotations are stored in metadata column "celltype"
+#' \dontrun{
 #' obj.full <- annotate.by.neighbors(obj.partial, labels.col="celltype")
-#' 
+#' }
 #' @export
 annotate.by.neighbors <- function (obj,
                                    ref.cells=NULL,

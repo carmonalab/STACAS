@@ -49,6 +49,9 @@ the integrated reference.}
 build the integration tree. Automatically chooses the largest max.seed.objects datasets;
 the remaining datasets will be added sequentially to the reference.}
 
+\item{min.sample.size}{Minimum number of cells per sample. Objects with fewer
+than this number of cells are not integrated.}
+
 \item{anchor.features}{Can be either: \itemize{
 \item{A numeric value. This will call \code{Seurat::SelectIntegrationFeatures} to identify \code{anchor.features}
     genes for anchor finding.}
@@ -95,4 +98,10 @@ Returns a \code{Seurat} object with a new integrated Assay. Also, centered, scal
 This function is a wrapper for running the several steps required to integrate single-cell
 datasets using STACAS: 1) Finding integration anchors; 2) Calculating the sample tree for
 the order of dataset integration; 3) Dataset batch effect correction and integration
+}
+\examples{
+data(sampleObj)
+library(Seurat)
+obj.list <- SplitObject(sampleObj, split.by="donor")
+integrated <- Run.STACAS(obj.list, min.sample.size=10, k.score=5, dims=3)
 }

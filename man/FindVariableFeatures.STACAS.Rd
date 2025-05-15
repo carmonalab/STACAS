@@ -17,15 +17,15 @@
 
 \item{nfeat}{Number of top HVG to be returned}
 
-\item{min.exp}{Minimum average normalized expression for HVG. If lower, the gene will be excluded}
-
-\item{max.exp}{Maximum average normalized expression for HVG. If higher, the gene will be excluded}
-
-\item{genesBlocklist}{Optionally takes a list of vectors of gene names. These genes will be removed from initial HVG set. If set to "default",
+\item{genesBlockList}{Optionally takes a list of vectors of gene names. These genes will be removed from initial HVG set. If set to "default",
 STACAS uses its internal list \code{data("genes.blocklist")}.
 This is useful to mitigate effect of genes associated with technical artifacts or batch effects
 (e.g. mitochondrial, heat-shock response). 
 If set to `NULL` no genes will be excluded}
+
+\item{min.exp}{Minimum average normalized expression for HVG. If lower, the gene will be excluded}
+
+\item{max.exp}{Maximum average normalized expression for HVG. If higher, the gene will be excluded}
 }
 \value{
 Returns a list of highly variable genes
@@ -34,4 +34,8 @@ Returns a list of highly variable genes
 Select highly variable genes (HVG) from an expression matrix. Genes from a blocklist
 (e.g. cell cycling genes, mitochondrial genes) can be excluded from the list of
 variable genes, as well as genes with very low or very high average expression
+}
+\examples{
+data(sampleObj)
+hvg <- FindVariableFeatures.STACAS(sampleObj)
 }

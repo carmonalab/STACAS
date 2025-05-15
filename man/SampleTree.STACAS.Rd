@@ -35,3 +35,10 @@ An integration tree to be passed to the integration function.
 \description{
 Build an integration tree by clustering samples in a hierarchical manner. Cumulative scoring among anchor pairs will be used as pairwise similarity criteria of samples.
 }
+\examples{
+data(sampleObj)
+library(Seurat)
+obj.list <- SplitObject(sampleObj, split.by="donor")
+anchors <- FindAnchors.STACAS(obj.list, min.sample.size=10, k.score=5, dims=3)
+tree <- SampleTree.STACAS(anchors)
+}
