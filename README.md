@@ -4,11 +4,11 @@
   <img height="80" src="docs/RSticker_STACAS.png">
 </p>
 
- [STACAS](https://github.com/carmonalab/STACAS) is a method for scRNA-seq integration, especially suited to accurately integrate datasets with large cell type imbalance (e.g. in terms of proportions of distinct cell populations).
-
+ [STACAS](https://github.com/carmonalab/STACAS) is a method for scRNA-seq integration or batch effect correction. Through an open-source benchmark, we showed that STACAS outperforms competing methods such as Harmony, Seurat, and scVI/scANVI.
+ 
 Prior cell type knowledge, given as cell type labels, can be provided to the algorithm to perform semi-supervised integration, leading to increased preservation of biological variability in the resulting integrated space.
 
-STACAS is robust to incomplete cell type labels and can be applied to large-scale integration tasks.
+STACAS scales well to large datasets and is robust to incomplete and imprecise input cell type labels, which are commonly encountered in real-life integration tasks. 
 
 ## Package Installation
 
