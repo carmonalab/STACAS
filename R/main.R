@@ -369,7 +369,7 @@ FindVariableFeatures.STACAS <- function(
   varfeat <- setdiff(varfeat, genes.block)
   
   #Also remove genes that are very poorly or always expressed (=not really variable genes)
-  means <- apply(GetAssayData(obj, assay=assay, slot="data")[varfeat,], 1, mean)
+  means <- apply(GetAssayData(obj, assay=assay, layer="data")[varfeat,], 1, mean)
   removeGenes2 <- names(means[means<min.exp | means>max.exp])
   
   varfeat <- setdiff(varfeat, removeGenes2)
@@ -558,7 +558,7 @@ IntegrateData.STACAS <- function(
     reference.integrated[[active.assay]] <- CreateAssayObject(
       data = GetAssayData(
         object = reference.integrated[[new.assay.name]],
-        slot = 'data'
+        layer = 'data'
       ),
       check.matrix = FALSE
     )
@@ -798,7 +798,7 @@ StandardizeGeneSymbols = function(obj, assay=NULL, slots=c("counts","data"),
   
   #Translate Ensembl IDs if necessary
   
-  genes.in <- rownames(GetAssayData(obj, assay = assay, slot=slots[1]))
+  genes.in <- rownames(GetAssayData(obj, assay = assay, layer=slots[1]))
   ngenes <- length(genes.in)
   
   ens.count <- length(intersect(genes.in, EnsemblGeneTable[["Gene stable ID"]]))
@@ -884,7 +884,7 @@ StandardizeGeneSymbols = function(obj, assay=NULL, slots=c("counts","data"),
   ###### 4. Subset matrix for allowed genes, and translate names
   matrix <- list()
   for (s in slots) {
-    matrix[[s]] <- GetAssayData(obj, assay = assay, slot=s)
+    matrix[[s]] <- GetAssayData(obj, assay = assay, layer=s)
     rows.select <- rownames(matrix[[s]])[rownames(matrix[[s]]) %in% names(genesAllowList)]
     matrix[[s]] <- matrix[[s]][rows.select, ]
     rownames(matrix[[s]]) <- unname(genesAllowList[rows.select])
@@ -896,7 +896,7 @@ StandardizeGeneSymbols = function(obj, assay=NULL, slots=c("counts","data"),
       DefaultAssay(obj) <- assay
       obj[["tmp"]] <- NULL
     } else {
-      obj <- SetAssayData(obj, assay = assay, new.data=matrix[[s]], slot=s)
+      obj <- SetAssayData(obj, assay = assay, new.data=matrix[[s]], layer=s)
     }
   }
   

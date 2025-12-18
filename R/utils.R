@@ -395,7 +395,7 @@ FindIntegrationAnchors.wdist <- function(
       )
       object.pair <- merge(x = object.1, y = object.2, merge.data = TRUE)
       
-      projected.embeddings.1<- t(x = GetAssayData(object = object.1, slot = "scale.data")[common.features, ]) %*%
+      projected.embeddings.1<- t(x = GetAssayData(object = object.1, layer = "scale.data")[common.features, ]) %*%
         Loadings(object = object.2[["pca"]])[common.features, ]
       
       object.pair[['projectedpca.1']] <- CreateDimReducObject(
@@ -403,7 +403,7 @@ FindIntegrationAnchors.wdist <- function(
         assay = DefaultAssay(object = object.1),
         key = "projectedpca1_"
       )
-      projected.embeddings.2 <- t(x = GetAssayData(object = object.2, slot = "scale.data")[common.features, ]) %*%
+      projected.embeddings.2 <- t(x = GetAssayData(object = object.2, layer = "scale.data")[common.features, ]) %*%
         Loadings(object = object.1[["pca"]])[common.features, ]
       object.pair[['projectedpca.2']] <- CreateDimReducObject(
         embeddings = rbind(projected.embeddings.2, Embeddings(object = object.1[["pca"]])),
@@ -731,12 +731,12 @@ FilterAnchors.Seurat <- function(
   cn.data1 <- L2Norm(
     mat = as.matrix(x = t(x = GetAssayData(
       object = object[[assay[1]]],
-      slot = slot)[features, nn.cells1])),
+      layer = slot)[features, nn.cells1])),
     MARGIN = 1)
   cn.data2 <- L2Norm(
     mat = as.matrix(x = t(x = GetAssayData(
       object = object[[assay[2]]],
-      slot = slot)[features, nn.cells2])),
+      layer = slot)[features, nn.cells2])),
     MARGIN = 1)
   nn <- NNHelper(
     data = cn.data2[nn.cells2, ],
@@ -1125,7 +1125,7 @@ PairwiseIntegrateReference.STACAS <- function(
       eps=0,
       verbose = verbose
     )
-    integrated.matrix <- cbind(integrated.matrix, GetAssayData(object = object.1, slot = 'data')[features.to.integrate, ])
+    integrated.matrix <- cbind(integrated.matrix, GetAssayData(object=object.1, layer='data')[features.to.integrate, ])
 
     merged.obj[[new.assay.name]] <- CreateAssayObject(data = integrated.matrix)
     DefaultAssay(object = merged.obj) <- new.assay.name
@@ -1137,7 +1137,7 @@ PairwiseIntegrateReference.STACAS <- function(
   integrated.data <- GetAssayData(
     object = anchorset@object.list[[as.character(ii)]],
     assay = new.assay.name,
-    slot = 'data'
+    layer = 'data'
   )
   integrated.data <- integrated.data[, colnames(x = unintegrated)]
  
@@ -1234,7 +1234,7 @@ MapQueryData.local <- function(
   )
   reference.integrated <- GetAssayData(
     object = reference,
-    slot = 'data'
+    layer = 'data'
   )[features.to.integrate, ]
   query.corrected[[length(query.corrected) + 1]] <- reference.integrated
   all.integrated <- do.call(cbind, query.corrected)
