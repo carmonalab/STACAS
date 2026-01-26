@@ -183,24 +183,6 @@ create_dummy_datasets_with_batch <- function(
   return(datasets)
 }
 
-
-#' Verify basic structure of a Seurat object
-#'
-#' @param seurat_obj A Seurat object
-#'
-#' @return Logical: TRUE if object has expected structure
-#'
-#' @keywords internal
-verify_seurat_structure <- function(seurat_obj) {
-  has_counts <- !is.null(SeuratObject::Layers(seurat_obj, search = "counts"))
-  has_metadata <- nrow(seurat_obj@meta.data) > 0
-  has_cells <- ncol(seurat_obj) > 0
-  has_genes <- nrow(seurat_obj) > 0
-  
-  all(c(has_counts, has_metadata, has_cells, has_genes))
-}
-
-
 #' Minimal preprocessing pipeline for PCA-ready Seurat objects
 #'
 #' Runs NormalizeData (optional), FindVariableFeatures, ScaleData, and RunPCA
