@@ -27,8 +27,11 @@ Imports:
     stats,
     BiocNeighbors,
     BiocParallel
-Suggests: sf    
+Suggests: 
+    testthat (>= 3.0.0),
+    sf
 License: GPL-3
 Encoding: UTF-8
 LazyData: false
 RoxygenNote: 7.3.2
+Config/testthat/edition: 3
