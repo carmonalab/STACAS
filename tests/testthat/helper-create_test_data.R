@@ -71,8 +71,8 @@ create_dummy_seurat <- function(n_cells = 100,
     }
   }
   
-  rownames(counts) <- paste0("Gene_", seq_len(n_genes))
-  colnames(counts) <- paste0("Cell_", seq_len(n_cells))
+  rownames(counts) <- paste0("Gene", seq_len(n_genes))
+  colnames(counts) <- paste0("Cell", seq_len(n_cells))
   
   # Create metadata
   meta_data <- data.frame(
