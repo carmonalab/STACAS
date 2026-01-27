@@ -438,7 +438,7 @@ PlotAnchors.STACAS <- function(
       scale_fill_manual(values=my.colors) +
       theme_ridges() +
       theme(legend.position = "none") +
-      geom_vline(xintercept = dist.thr, linetype="dashed", size=0.75) +
+      geom_vline(xintercept = dist.thr, linetype="dashed", linewidth=0.75) +
       ggtitle(sprintf("%s - thr=%.3f", obj.names[ds1], dist.thr))
     
   }

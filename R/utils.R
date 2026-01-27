@@ -362,8 +362,7 @@ FindIntegrationAnchors.wdist <- function(
         object = object.list[[i]],
         assays = assay[i],
         features = anchor.features,
-        counts = FALSE,
-        scale.data = TRUE,
+        layers = c("data","scale.data"),
         dimreducs = reduction
       ))
       suppressWarnings(
@@ -371,8 +370,7 @@ FindIntegrationAnchors.wdist <- function(
         object = object.list[[j]],
         assays = assay[j],
         features = anchor.features,
-        counts = FALSE,
-        scale.data = TRUE,
+        layers = c("data","scale.data"),
         dimreducs = reduction
       ))
       # suppress key duplication warning
@@ -381,13 +379,19 @@ FindIntegrationAnchors.wdist <- function(
       if (reduction %in% Reductions(object = object.1)) {
         slot(object = object.1[[reduction]], name = "assay.used") <- "ToIntegrate"
       }
-      object.1 <- DietSeurat(object = object.1, assays = "ToIntegrate", scale.data = TRUE, dimreducs = reduction)
+      object.1 <- DietSeurat(object = object.1,
+                             assays = "ToIntegrate",
+                             layers = c("data","scale.data"),
+                             dimreducs = reduction)
       suppressWarnings(object.2[["ToIntegrate"]] <- object.2[[assay[j]]])
       DefaultAssay(object = object.2) <- "ToIntegrate"
       if (reduction %in% Reductions(object = object.2)) {
         slot(object = object.2[[reduction]], name = "assay.used") <- "ToIntegrate"
       }
-      object.2 <- DietSeurat(object = object.2, assays = "ToIntegrate", scale.data = TRUE, dimreducs = reduction)
+      object.2 <- DietSeurat(object = object.2,
+                             assays = "ToIntegrate",
+                             layers = c("data","scale.data"),
+                             dimreducs = reduction)
 
       common.features <- intersect(
         x = rownames(x = Loadings(object = object.1[["pca"]])),
@@ -1066,12 +1070,12 @@ PairwiseIntegrateReference.STACAS <- function(
     object.1 <- DietSeurat(
       object = anchorset@object.list[[merge.pair[1]]],
       assays = DefaultAssay(anchorset@object.list[[merge.pair[1]]]),
-      counts = FALSE
+      layers = c("data")
     )
     object.2 <- DietSeurat(
       object = anchorset@object.list[[merge.pair[2]]],
       assays = DefaultAssay(anchorset@object.list[[merge.pair[2]]]),
-      counts = FALSE
+      layers = c("data")
     )
     # suppress key duplication warning
     suppressWarnings(object.1[["ToIntegrate"]] <- object.1[[DefaultAssay(object = object.1)]])
