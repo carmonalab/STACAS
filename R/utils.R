@@ -742,7 +742,7 @@ FilterAnchors.Seurat <- function(
       object = object[[assay[2]]],
       layer = slot)[features, nn.cells2])),
     MARGIN = 1)
-  nn <- NNHelper(
+  nn <- Seurat:::NNHelper(
     data = cn.data2[nn.cells2, ],
     query = cn.data1[nn.cells1, ],
     k = k.filter,
@@ -1170,6 +1170,26 @@ PairwiseIntegrateReference.STACAS <- function(
   unintegrated[["FindIntegrationAnchors"]] <- slot(object = anchorset, name = "command")
   suppressWarnings(expr = unintegrated <- LogSeuratCommand(object = unintegrated))
   return(unintegrated)
+}
+
+
+# @return returns l2-normalized matrix
+# Modified from Seurat 4.1.1
+L2Norm <- function(mat, MARGIN = 1){
+  normalized <- Sweep(
+    x = mat,
+    MARGIN = MARGIN,
+    STATS = apply(
+      X = mat,
+      MARGIN = MARGIN,
+      FUN = function(x){
+        sqrt(x = sum(x ^ 2))
+      }
+    ),
+    FUN = "/"
+  )
+  normalized[!is.finite(x = normalized)] <- 0
+  return(normalized)
 }
 
 #Modified from Seurat 4.1.1
